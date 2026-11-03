@@ -1,0 +1,636 @@
+{
+  "trackedEntityTypes": [
+    {
+      "id": "PersonType1",
+      "name": "Person",
+      "shortName": "Person",
+      "trackedEntityTypeAttributes": [
+        {
+          "trackedEntityAttribute": {
+            "id": "GivenName01"
+          }
+        },
+        {
+          "trackedEntityAttribute": {
+            "id": "FamilyName1"
+          }
+        },
+        {
+          "trackedEntityAttribute": {
+            "id": "BirthDate01"
+          }
+        }
+      ],
+      "sharing": {
+        "public": "r-------",
+        "userGroups": {
+          "DataCapture": {
+            "id": "DataCapture",
+            "access": "rwrw----"
+          },
+          "DataViewers": {
+            "id": "DataViewers",
+            "access": "r-r-----"
+          }
+        }
+      }
+    }
+  ],
+  "trackedEntityAttributes": [
+    {
+      "id": "GivenName01",
+      "code": "GIVEN_NAME",
+      "name": "Given name",
+      "shortName": "Given name",
+      "valueType": "TEXT",
+      "aggregationType": "NONE"
+    },
+    {
+      "id": "FamilyName1",
+      "code": "FAMILY_NAME",
+      "name": "Family name",
+      "shortName": "Family name",
+      "valueType": "TEXT",
+      "aggregationType": "NONE"
+    },
+    {
+      "id": "BirthDate01",
+      "code": "DATE_OF_BIRTH",
+      "name": "Date of birth",
+      "shortName": "Date of birth",
+      "valueType": "DATE",
+      "aggregationType": "NONE"
+    },
+    {
+      "id": "UniqueId001",
+      "code": "UNIQUE_ID",
+      "name": "Unique ID",
+      "shortName": "Unique ID",
+      "valueType": "TEXT",
+      "aggregationType": "NONE",
+      "unique": true
+    },
+    {
+      "id": "PhoneNumber",
+      "code": "PHONE",
+      "name": "Phone number",
+      "shortName": "Phone number",
+      "valueType": "PHONE_NUMBER",
+      "aggregationType": "NONE"
+    }
+  ],
+  "optionSets": [
+    {
+      "id": "BloodGroups",
+      "name": "Blood groups",
+      "valueType": "TEXT",
+      "options": [
+        {
+          "id": "OptBloodA01"
+        },
+        {
+          "id": "OptBloodB01"
+        },
+        {
+          "id": "OptBloodO01"
+        }
+      ]
+    },
+    {
+      "id": "Outcomes001",
+      "name": "Outcomes",
+      "valueType": "TEXT",
+      "options": [
+        {
+          "id": "OptLiveBirt"
+        },
+        {
+          "id": "OptStillBir"
+        }
+      ]
+    }
+  ],
+  "options": [
+    {
+      "id": "OptBloodA01",
+      "code": "A",
+      "name": "A",
+      "sortOrder": 1
+    },
+    {
+      "id": "OptBloodB01",
+      "code": "B",
+      "name": "B",
+      "sortOrder": 2
+    },
+    {
+      "id": "OptBloodO01",
+      "code": "O",
+      "name": "O",
+      "sortOrder": 3
+    },
+    {
+      "id": "OptLiveBirt",
+      "code": "LIVE_BIRTH",
+      "name": "Live birth",
+      "sortOrder": 1
+    },
+    {
+      "id": "OptStillBir",
+      "code": "STILLBIRTH",
+      "name": "Stillbirth",
+      "sortOrder": 2
+    }
+  ],
+  "dataElements": [
+    {
+      "id": "LmpDate0001",
+      "code": "LMP",
+      "name": "Last menstrual period",
+      "shortName": "Last menstrual period",
+      "valueType": "DATE",
+      "domainType": "TRACKER",
+      "aggregationType": "NONE"
+    },
+    {
+      "id": "BloodGroup1",
+      "code": "BLOOD_GROUP",
+      "name": "Blood group",
+      "shortName": "Blood group",
+      "valueType": "TEXT",
+      "domainType": "TRACKER",
+      "aggregationType": "NONE",
+      "optionSet": {
+        "id": "BloodGroups"
+      }
+    },
+    {
+      "id": "Systolic001",
+      "code": "SYSTOLIC",
+      "name": "Systolic blood pressure",
+      "shortName": "Systolic blood pressure",
+      "valueType": "INTEGER_POSITIVE",
+      "domainType": "TRACKER",
+      "aggregationType": "NONE"
+    },
+    {
+      "id": "Diastolic01",
+      "code": "DIASTOLIC",
+      "name": "Diastolic blood pressure",
+      "shortName": "Diastolic blood pressure",
+      "valueType": "INTEGER_POSITIVE",
+      "domainType": "TRACKER",
+      "aggregationType": "NONE"
+    },
+    {
+      "id": "Confirmed01",
+      "code": "CONFIRMED",
+      "name": "Pregnancy confirmed",
+      "shortName": "Pregnancy confirmed",
+      "valueType": "TRUE_ONLY",
+      "domainType": "TRACKER",
+      "aggregationType": "NONE"
+    },
+    {
+      "id": "Haemoglobin",
+      "code": "HB",
+      "name": "Haemoglobin",
+      "shortName": "Haemoglobin",
+      "valueType": "NUMBER",
+      "domainType": "TRACKER",
+      "aggregationType": "NONE"
+    },
+    {
+      "id": "Notes000001",
+      "code": "NOTES",
+      "name": "Notes",
+      "shortName": "Notes",
+      "valueType": "LONG_TEXT",
+      "domainType": "TRACKER",
+      "aggregationType": "NONE"
+    },
+    {
+      "id": "Outcome0001",
+      "code": "OUTCOME",
+      "name": "Outcome",
+      "shortName": "Outcome",
+      "valueType": "TEXT",
+      "domainType": "TRACKER",
+      "aggregationType": "NONE",
+      "optionSet": {
+        "id": "Outcomes001"
+      }
+    },
+    {
+      "id": "BirthWeight",
+      "code": "BIRTH_WEIGHT",
+      "name": "Birth weight",
+      "shortName": "Birth weight",
+      "valueType": "INTEGER_POSITIVE",
+      "domainType": "TRACKER",
+      "aggregationType": "NONE"
+    },
+    {
+      "id": "DoseGiven01",
+      "code": "DOSE_GIVEN",
+      "name": "Dose given",
+      "shortName": "Dose given",
+      "valueType": "BOOLEAN",
+      "domainType": "TRACKER",
+      "aggregationType": "NONE"
+    }
+  ],
+  "programs": [
+    {
+      "id": "PregProgram",
+      "code": "PREGNANCY",
+      "name": "Pregnancy",
+      "shortName": "Pregnancy",
+      "programType": "WITH_REGISTRATION",
+      "trackedEntityType": {
+        "id": "PersonType1"
+      },
+      "accessLevel": "OPEN",
+      "programStages": [
+        {
+          "id": "PregProfile"
+        },
+        {
+          "id": "PregCheck01"
+        },
+        {
+          "id": "PregLab0001"
+        },
+        {
+          "id": "PregClose01"
+        }
+      ],
+      "programTrackedEntityAttributes": [
+        {
+          "trackedEntityAttribute": {
+            "id": "GivenName01"
+          },
+          "mandatory": true,
+          "searchable": true
+        },
+        {
+          "trackedEntityAttribute": {
+            "id": "FamilyName1"
+          },
+          "mandatory": true,
+          "searchable": true
+        },
+        {
+          "trackedEntityAttribute": {
+            "id": "BirthDate01"
+          },
+          "mandatory": true,
+          "searchable": false
+        },
+        {
+          "trackedEntityAttribute": {
+            "id": "UniqueId001"
+          },
+          "mandatory": false,
+          "searchable": true
+        },
+        {
+          "trackedEntityAttribute": {
+            "id": "PhoneNumber"
+          },
+          "mandatory": false,
+          "searchable": true
+        }
+      ],
+      "sharing": {
+        "public": "r-------",
+        "userGroups": {
+          "DataCapture": {
+            "id": "DataCapture",
+            "access": "rwrw----"
+          },
+          "DataViewers": {
+            "id": "DataViewers",
+            "access": "r-r-----"
+          }
+        }
+      }
+    },
+    {
+      "id": "ChildProgra",
+      "code": "CHILD",
+      "name": "Child",
+      "shortName": "Child",
+      "programType": "WITH_REGISTRATION",
+      "trackedEntityType": {
+        "id": "PersonType1"
+      },
+      "accessLevel": "PROTECTED",
+      "onlyEnrollOnce": true,
+      "programStages": [
+        {
+          "id": "ChildBirth1"
+        },
+        {
+          "id": "ChildVacc01"
+        }
+      ],
+      "programTrackedEntityAttributes": [
+        {
+          "trackedEntityAttribute": {
+            "id": "GivenName01"
+          },
+          "mandatory": true,
+          "searchable": true
+        },
+        {
+          "trackedEntityAttribute": {
+            "id": "FamilyName1"
+          },
+          "mandatory": true,
+          "searchable": true
+        },
+        {
+          "trackedEntityAttribute": {
+            "id": "BirthDate01"
+          },
+          "mandatory": true,
+          "searchable": false
+        }
+      ],
+      "sharing": {
+        "public": "r-------",
+        "userGroups": {
+          "DataCapture": {
+            "id": "DataCapture",
+            "access": "rwrw----"
+          },
+          "DataViewers": {
+            "id": "DataViewers",
+            "access": "r-r-----"
+          }
+        }
+      }
+    }
+  ],
+  "programStages": [
+    {
+      "id": "PregProfile",
+      "name": "Profile",
+      "program": {
+        "id": "PregProgram"
+      },
+      "sortOrder": 1,
+      "repeatable": false,
+      "programStageDataElements": [
+        {
+          "dataElement": {
+            "id": "LmpDate0001"
+          },
+          "compulsory": true
+        },
+        {
+          "dataElement": {
+            "id": "BloodGroup1"
+          },
+          "compulsory": false
+        }
+      ],
+      "sharing": {
+        "public": "r-------",
+        "userGroups": {
+          "DataCapture": {
+            "id": "DataCapture",
+            "access": "rwrw----"
+          },
+          "DataViewers": {
+            "id": "DataViewers",
+            "access": "r-r-----"
+          }
+        }
+      }
+    },
+    {
+      "id": "PregCheck01",
+      "name": "Check",
+      "program": {
+        "id": "PregProgram"
+      },
+      "sortOrder": 2,
+      "repeatable": true,
+      "programStageDataElements": [
+        {
+          "dataElement": {
+            "id": "Systolic001"
+          },
+          "compulsory": true
+        },
+        {
+          "dataElement": {
+            "id": "Diastolic01"
+          },
+          "compulsory": true
+        },
+        {
+          "dataElement": {
+            "id": "Confirmed01"
+          },
+          "compulsory": false
+        },
+        {
+          "dataElement": {
+            "id": "Notes000001"
+          },
+          "compulsory": false
+        }
+      ],
+      "standardInterval": 28,
+      "sharing": {
+        "public": "r-------",
+        "userGroups": {
+          "DataCapture": {
+            "id": "DataCapture",
+            "access": "rwrw----"
+          },
+          "DataViewers": {
+            "id": "DataViewers",
+            "access": "r-r-----"
+          }
+        }
+      }
+    },
+    {
+      "id": "PregLab0001",
+      "name": "Lab",
+      "program": {
+        "id": "PregProgram"
+      },
+      "sortOrder": 3,
+      "repeatable": true,
+      "programStageDataElements": [
+        {
+          "dataElement": {
+            "id": "Haemoglobin"
+          },
+          "compulsory": false
+        }
+      ],
+      "sharing": {
+        "public": "r-------",
+        "userGroups": {
+          "DataCapture": {
+            "id": "DataCapture",
+            "access": "rwrw----"
+          },
+          "DataViewers": {
+            "id": "DataViewers",
+            "access": "r-r-----"
+          }
+        }
+      }
+    },
+    {
+      "id": "PregClose01",
+      "name": "Close",
+      "program": {
+        "id": "PregProgram"
+      },
+      "sortOrder": 4,
+      "repeatable": false,
+      "programStageDataElements": [
+        {
+          "dataElement": {
+            "id": "Outcome0001"
+          },
+          "compulsory": true
+        }
+      ],
+      "sharing": {
+        "public": "r-------",
+        "userGroups": {
+          "DataCapture": {
+            "id": "DataCapture",
+            "access": "rwrw----"
+          },
+          "DataViewers": {
+            "id": "DataViewers",
+            "access": "r-r-----"
+          }
+        }
+      }
+    },
+    {
+      "id": "ChildBirth1",
+      "name": "Birth",
+      "program": {
+        "id": "ChildProgra"
+      },
+      "sortOrder": 1,
+      "repeatable": false,
+      "programStageDataElements": [
+        {
+          "dataElement": {
+            "id": "BirthWeight"
+          },
+          "compulsory": true
+        }
+      ],
+      "sharing": {
+        "public": "r-------",
+        "userGroups": {
+          "DataCapture": {
+            "id": "DataCapture",
+            "access": "rwrw----"
+          },
+          "DataViewers": {
+            "id": "DataViewers",
+            "access": "r-r-----"
+          }
+        }
+      }
+    },
+    {
+      "id": "ChildVacc01",
+      "name": "Vaccination",
+      "program": {
+        "id": "ChildProgra"
+      },
+      "sortOrder": 2,
+      "repeatable": true,
+      "programStageDataElements": [
+        {
+          "dataElement": {
+            "id": "DoseGiven01"
+          },
+          "compulsory": true
+        }
+      ],
+      "sharing": {
+        "public": "r-------",
+        "userGroups": {
+          "DataCapture": {
+            "id": "DataCapture",
+            "access": "rwrw----"
+          },
+          "DataViewers": {
+            "id": "DataViewers",
+            "access": "r-r-----"
+          }
+        }
+      }
+    }
+  ],
+  "relationshipTypes": [
+    {
+      "id": "MotherChild",
+      "code": "MOTHER_CHILD",
+      "name": "Mother and child",
+      "fromToName": "Mother of",
+      "toFromName": "Mother",
+      "bidirectional": true,
+      "fromConstraint": {
+        "relationshipEntity": "TRACKED_ENTITY_INSTANCE",
+        "trackedEntityType": {
+          "id": "PersonType1"
+        },
+        "program": {
+          "id": "PregProgram"
+        }
+      },
+      "toConstraint": {
+        "relationshipEntity": "TRACKED_ENTITY_INSTANCE",
+        "trackedEntityType": {
+          "id": "PersonType1"
+        },
+        "program": {
+          "id": "ChildProgra"
+        }
+      },
+      "sharing": {
+        "public": "r-------",
+        "userGroups": {
+          "DataCapture": {
+            "id": "DataCapture",
+            "access": "rwrw----"
+          },
+          "DataViewers": {
+            "id": "DataViewers",
+            "access": "r-r-----"
+          }
+        }
+      }
+    }
+  ],
+  "userGroups": [
+    {
+      "id": "DataCapture",
+      "name": "Data capture",
+      "users": []
+    },
+    {
+      "id": "DataViewers",
+      "name": "Data viewers",
+      "users": []
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 210" width="560" height="210" role="img">
+<title>facility_delivery = { bernoulli = 0.45 }</title>
+<style>
+svg { --ink: #1f2933; --muted: #616e7c; --bar: #2f6f9f; --clip: #c8372d; --line: #cbd2d9; }
+@media (prefers-color-scheme: dark) {
+  svg { --ink: #e4e7eb; --muted: #9aa5b1; --bar: #5ea8dc; --clip: #ff6b5f; --line: #3e4c59; }
+}
+text { font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--muted); }
+.bar { fill: var(--bar); }
+.clip { fill: var(--clip); }
+text.clip { font-weight: 600; }
+.axis { stroke: var(--line); }
+.mark { stroke: var(--ink); stroke-dasharray: 4 3; }
+.mark-label { fill: var(--ink); }
+</style>
+<line class="axis" x1="16" x2="544" y1="170" y2="170"/>
+<rect class="bar" x="118.0" y="34.0" width="60.0" height="136.0"/>
+<text x="148.0" y="29.0" text-anchor="middle">55%</text>
+<text x="148.0" y="185.0" text-anchor="middle">0</text>
+<rect class="bar" x="382.0" y="59.0" width="60.0" height="111.0"/>
+<text x="412.0" y="54.0" text-anchor="middle">45%</text>
+<text x="412.0" y="185.0" text-anchor="middle">1</text>
+</svg>

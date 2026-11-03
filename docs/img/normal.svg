@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 210" width="560" height="210" role="img">
+<title>height = { normal = { mean = 158, sd = 6 } }</title>
+<style>
+svg { --ink: #1f2933; --muted: #616e7c; --bar: #2f6f9f; --clip: #c8372d; --line: #cbd2d9; }
+@media (prefers-color-scheme: dark) {
+  svg { --ink: #e4e7eb; --muted: #9aa5b1; --bar: #5ea8dc; --clip: #ff6b5f; --line: #3e4c59; }
+}
+text { font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--muted); }
+.bar { fill: var(--bar); }
+.clip { fill: var(--clip); }
+text.clip { font-weight: 600; }
+.axis { stroke: var(--line); }
+.mark { stroke: var(--ink); stroke-dasharray: 4 3; }
+.mark-label { fill: var(--ink); }
+</style>
+<line class="axis" x1="16" x2="544" y1="170" y2="170"/>
+<rect class="bar" x="16.5" y="168.7" width="9.6" height="1.3"/>
+<rect class="bar" x="27.1" y="168.1" width="9.6" height="1.9"/>
+<rect class="bar" x="37.6" y="167.4" width="9.6" height="2.6"/>
+<rect class="bar" x="48.2" y="166.5" width="9.6" height="3.5"/>
+<rect class="bar" x="58.7" y="164.8" width="9.6" height="5.2"/>
+<rect class="bar" x="69.3" y="162.7" width="9.6" height="7.3"/>
+<rect class="bar" x="79.9" y="161.0" width="9.6" height="9.0"/>
+<rect class="bar" x="90.4" y="157.8" width="9.6" height="12.2"/>
+<rect class="bar" x="101.0" y="154.8" width="9.6" height="15.2"/>
+<rect class="bar" x="111.5" y="148.7" width="9.6" height="21.3"/>
+<rect class="bar" x="122.1" y="144.5" width="9.6" height="25.5"/>
+<rect class="bar" x="132.7" y="138.7" width="9.6" height="31.3"/>
+<rect class="bar" x="143.2" y="130.9" width="9.6" height="39.1"/>
+<rect class="bar" x="153.8" y="121.4" width="9.6" height="48.6"/>
+<rect class="bar" x="164.3" y="114.7" width="9.6" height="55.3"/>
+<rect class="bar" x="174.9" y="104.2" width="9.6" height="65.8"/>
+<rect class="bar" x="185.5" y="97.2" width="9.6" height="72.8"/>
+<rect class="bar" x="196.0" y="81.9" width="9.6" height="88.1"/>
+<rect class="bar" x="206.6" y="76.2" width="9.6" height="93.8"/>
+<rect class="bar" x="217.1" y="63.2" width="9.6" height="106.8"/>
+<rect class="bar" x="227.7" y="57.0" width="9.6" height="113.0"/>
+<rect class="bar" x="238.3" y="48.5" width="9.6" height="121.5"/>
+<rect class="bar" x="248.8" y="42.4" width="9.6" height="127.6"/>
+<rect class="bar" x="259.4" y="38.8" width="9.6" height="131.2"/>
+<rect class="bar" x="269.9" y="34.0" width="9.6" height="136.0"/>
+<rect class="bar" x="280.5" y="38.6" width="9.6" height="131.4"/>
+<rect class="bar" x="291.1" y="35.1" width="9.6" height="134.9"/>
+<rect class="bar" x="301.6" y="37.4" width="9.6" height="132.6"/>
+<rect class="bar" x="312.2" y="44.2" width="9.6" height="125.8"/>
+<rect class="bar" x="322.7" y="51.7" width="9.6" height="118.3"/>
+<rect class="bar" x="333.3" y="55.6" width="9.6" height="114.4"/>
+<rect class="bar" x="343.9" y="64.6" width="9.6" height="105.4"/>
+<rect class="bar" x="354.4" y="76.5" width="9.6" height="93.5"/>
+<rect class="bar" x="365.0" y="87.8" width="9.6" height="82.2"/>
+<rect class="bar" x="375.5" y="98.5" width="9.6" height="71.5"/>
+<rect class="bar" x="386.1" y="107.6" width="9.6" height="62.4"/>
+<rect class="bar" x="396.7" y="115.5" width="9.6" height="54.5"/>
+<rect class="bar" x="407.2" y="126.0" width="9.6" height="44.0"/>
+<rect class="bar" x="417.8" y="131.9" width="9.6" height="38.1"/>
+<rect class="bar" x="428.3" y="139.0" width="9.6" height="31.0"/>
+<rect class="bar" x="438.9" y="145.4" width="9.6" height="24.6"/>
+<rect class="bar" x="449.5" y="149.2" width="9.6" height="20.8"/>
+<rect class="bar" x="460.0" y="154.5" width="9.6" height="15.5"/>
+<rect class="bar" x="470.6" y="158.5" width="9.6" height="11.5"/>
+<rect class="bar" x="481.1" y="160.5" width="9.6" height="9.5"/>
+<rect class="bar" x="491.7" y="163.0" width="9.6" height="7.0"/>
+<rect class="bar" x="502.3" y="165.0" width="9.6" height="5.0"/>
+<rect class="bar" x="512.8" y="167.6" width="9.6" height="2.4"/>
+<rect class="bar" x="523.4" y="167.5" width="9.6" height="2.5"/>
+<rect class="bar" x="533.9" y="167.9" width="9.6" height="2.1"/>
+<text x="25.5" y="185.0" text-anchor="middle">140</text>
+<text x="169.1" y="185.0" text-anchor="middle">150</text>
+<text x="312.7" y="185.0" text-anchor="middle">160</text>
+<text x="456.4" y="185.0" text-anchor="middle">170</text>
+<line class="mark" x1="284.2" x2="284.2" y1="4" y2="170"/>
+<text x="288.2" y="14.0" text-anchor="start" class="mark-label">mean 158</text>
+<text x="280.0" y="204.0" text-anchor="middle">cm</text></svg>

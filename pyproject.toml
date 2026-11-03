@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools>=80"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "synthetic-db-generator"
+version = "0.1.0"
+description = "DHIS2 tracker databases for performance testing, from metadata and a spec"
+readme = "README.md"
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
+requires-python = ">=3.13"
+authors = [{name = "DHIS2"}]
+keywords = ["dhis2", "tracker", "performance", "synthetic-data", "postgres"]
+dependencies = [
+    # Pinned: every draw and row digest goes through DuckDB's functions, see generate.py.
+    "duckdb==2.0.0",
+    "pyarrow>=21.0.0",
+    "psycopg[binary]>=3.2.0",
+    "httpx>=0.28.0",
+    "isal>=1.8.0",
+    # DuckDB needs it for Python functions in SQL, such as the metadata UIDs (uid.py).
+    "numpy>=2.0",
+]
+
+[project.urls]
+Repository = "https://github.com/dhis2/synthetic-db-generator"
+
+[project.scripts]
+dbgen = "dbgen.cli:main"
+
+[tool.uv]
+package = true
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.2.0",
+    "pytest>=8.4.0",
+    "ruff>=0.12.1",
+    "ty>=0.0.84",
+]
+
+[tool.setuptools.package-data]
+# The base a release builds at: its images (lock.toml) and their compose setup.
+dbgen = ["sql/**/*.sql", "lock.toml", "docker/*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "UP", # pyupgrade
+]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "docker: needs Docker, starts DHIS2 and Postgres",
+]

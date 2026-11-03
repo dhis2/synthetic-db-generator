@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Build outputs
+/output/
+
+# Editors
+.vscode/
+*.swp
+*~
+
+.claude
+CLAUDE.local.md
+
+# Local research notes and papers
+_research/

@@ -1,0 +1,22 @@
+# The hooks run the tools pinned in uv.lock, so a commit is checked by the same versions as
+# `uv run ruff` and `uv run ty`. Install with: uv run pre-commit install
+repos:
+- repo: local
+  hooks:
+    - id: ruff-check
+      name: ruff check
+      entry: uv run --frozen ruff check --fix
+      language: system
+      types_or: [python, pyi]
+    - id: ruff-format
+      name: ruff format
+      entry: uv run --frozen ruff format
+      language: system
+      types_or: [python, pyi]
+    - id: ty
+      name: ty check
+      # ty checks the whole project, since a change in one module can break its callers.
+      entry: uv run --frozen ty check
+      language: system
+      types_or: [python, pyi]
+      pass_filenames: false

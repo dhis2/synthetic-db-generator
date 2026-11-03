@@ -1,0 +1,89 @@
+# DHIS2 and Postgres used while building the database (`dbgen stage bootstrap`, `load`, `verify`).
+# Images are pinned in lock.toml and passed in by dbgen. Ports differ from the perf
+# harness (5432, 8080). Memory and CPUs are capped so a build cannot starve the machine, and
+# dbgen stops the stack after each step. dbgen passes the caps in, its defaults or the DBGEN_
+# variables of its environment (client.py), and checks the machine has the memory free.
+name: dbgen
+
+services:
+  db:
+    image: "${POSTGRES_IMAGE:?set by dbgen from lock.toml}"
+    mem_limit: ${DBGEN_DB_MEMORY:?set by dbgen}
+    cpus: ${DBGEN_DB_CPUS:?set by dbgen}
+    # Parallel index builds take maintenance_work_mem (1 GB) of shared memory; counts toward mem_limit.
+    shm_size: 2gb
+    # Build-only settings: nothing here needs to survive a crash, the result is dumped.
+    # default_toast_compression: lz4 compresses an event's data values faster than the default
+    # pglz, to about the same size. The dump is text, so a restored database compresses with its
+    # own setting.
+    command: >
+      postgres
+      -c default_toast_compression=lz4
+      -c wal_level=minimal
+      -c max_wal_senders=0
+      -c fsync=off
+      -c synchronous_commit=off
+      -c full_page_writes=off
+      -c max_wal_size=4GB
+      -c checkpoint_timeout=30min
+      -c shared_buffers=1GB
+      -c work_mem=32MB
+      -c maintenance_work_mem=1GB
+      -c max_parallel_maintenance_workers=2
+      -c autovacuum=off
+    environment:
+      POSTGRES_USER: dhis
+      POSTGRES_DB: dhis
+      POSTGRES_PASSWORD: dhis
+      PGUSER: dhis
+      PGDATABASE: dhis
+      PGPASSWORD: dhis
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:25432:5432"
+    # While a service starts, its check runs every start_interval rather than every interval, so
+    # `compose up --wait` returns soon after the service is up.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --host=127.0.0.1 --username=dhis --dbname=dhis"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 60s
+      start_interval: 1s
+
+  web:
+    image: "${DHIS2_IMAGE:?set by dbgen from lock.toml}"
+    mem_limit: ${DBGEN_WEB_MEMORY:?set by dbgen}
+    cpus: ${DBGEN_WEB_CPUS:?set by dbgen}
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xmx${DBGEN_WEB_HEAP:?set by dbgen} -Xms1g"
+    volumes:
+      - ./dhis.conf:/opt/dhis2/dhis.conf:ro
+    ports:
+      - "127.0.0.1:28080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # A sidecar checks health, so the check does not depend on curl in the DHIS2 image.
+  web-healthcheck:
+    image: "${CURL_IMAGE:?set by dbgen from lock.toml}"
+    mem_limit: 64m
+    # sleep as PID 1 ignores SIGTERM, so stop would wait 10 s to kill it; under an init process
+    # sleep is not PID 1 and dies on the SIGTERM the init forwards.
+    init: true
+    network_mode: service:web
+    command: ["sleep", "infinity"]
+    depends_on:
+      - web
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl --fail --silent http://localhost:8080/api/ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 300s
+      start_interval: 1s
+
+volumes:
+  pgdata:

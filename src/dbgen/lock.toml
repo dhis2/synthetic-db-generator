@@ -1,0 +1,9 @@
+# The Docker images a build runs, pinned by digest. Bump one deliberately and review its diff. A
+# build downloads nothing but these images; the packages a database's metadata was extracted from
+# are pinned in its packages.lock.toml (databases/<name>/).
+
+[images]
+dhis2 = "dhis2/core:2.42.0@sha256:fc88ed202f4e6ab7a59b9314e6787eb8cb84df36e78b496a6ac4f3bc3c6f987f"
+postgres = "ghcr.io/baosystems/postgis:16-3.5@sha256:0f1c5c0f70f03d4d19ad1d7308d86e6162dff5429c491002298a7b5e46d2f2e8"
+# The healthcheck of DHIS2.
+curl = "curlimages/curl:8.21.0@sha256:7c12af72ceb38b7432ab85e1a265cff6ae58e06f95539d539b654f2cfa64bb13"

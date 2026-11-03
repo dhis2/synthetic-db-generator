@@ -1,0 +1,115 @@
+# A small example: pregnancies in a Pregnancy program, and the children of their live births in a
+# Child program, linked to their mothers. The metadata is made up, a few fields of each value type.
+# A field this spec leaves out gets the metadata's default if compulsory, else stays empty.
+#
+# In expressions, dates are days since 1970-01-01, so an event's week of pregnancy is
+# enrollment.week + (event.date - enrollment.date) / 7, the first check being the enrollment's date.
+
+[build]
+metadata = ["metadata.json"]
+seed = 42
+start = 2023-01-01
+end = 2025-01-01
+
+# Example Land, a made-up country of 2 regions, 6 districts and 24 facilities.
+[orgunits]
+root = { name = "Example Land", code = "EX" }
+
+[[orgunits.level]]
+name = "Region"
+count = 2
+
+[[orgunits.level]]
+name = "District"
+per_parent = 3
+
+[[orgunits.level]]
+name = "Facility"
+per_parent = 4
+
+[trait.district]
+# Districts differ in their people, and so in their records.
+people = { lognormal = { mean = 40_000, sigma = 0.5 }, round = 0 }
+
+[trait.facility]
+# A few busy facilities and many quiet ones.
+size = { lognormal = { median = 1, sigma = 0.8 } }
+
+# A tracked entity is a woman, an enrollment one of her pregnancies.
+[program.PREGNANCY]
+tracked_entities = { total = "district.people * 0.02", among = "District", by = "facility.size" }
+
+[program.PREGNANCY.enrollments]
+count = { poisson = 0.2, plus = 1 } # one pregnancy, and maybe more, one after another
+gap = { uniform = [182, 546] } # from the last event to the next first check
+status = { COMPLETED = 0.7, ACTIVE = 0.3 }
+
+[program.PREGNANCY.trait.tracked_entity]
+age = { uniform = [15, 45] } # at her first check, in years
+
+[program.PREGNANCY.trait.enrollment]
+week = { uniform = [8, 24] } # of pregnancy at the first check
+days_to_birth = { sql = "7 * (40 - enrollment.week)" }
+live_birth = { bernoulli = 0.98 }
+hb = { normal = { mean = 11.2, sd = 1.5 }, min = 6, max = 16 } # her haemoglobin, g/dL
+
+# A visit is a check and a lab test on one day, about monthly until the birth.
+[program.PREGNANCY.visits]
+stages = ["Check", "Lab"]
+count = { poisson = 4, plus = 1, max = "1 + floor(enrollment.days_to_birth / 35)" }
+spacing = { uniform = [28, 35] }
+status = { COMPLETED = 0.97, SKIPPED = 0.03 }
+
+[program.PREGNANCY.stage."Profile"]
+offset = 0 # at the first check
+
+[program.PREGNANCY.stage."Close"]
+share = 0.8
+offset = { sql = "enrollment.days_to_birth + 1 + 14 * u('delay')" } # up to two weeks after
+
+[program.PREGNANCY.values]
+LMP = { sql = "enrollment.date - 7 * enrollment.week" }
+BLOOD_GROUP = { weights = { O = 0.45, A = 0.4, B = 0.15 } }
+SYSTOLIC = { normal = { mean = 115, sd = 11 }, min = 80, max = 200, round = 0 }
+# At least 10 below the systolic of the same event.
+DIASTOLIC = { normal = { mean = 72, sd = 8 }, min = 50, max = "value.Systolic001::double - 10", round = 0 }
+# Each woman's results scatter around her own haemoglobin.
+HB = { normal = { mean = "enrollment.hb", sd = 0.6 }, min = 4, max = 18, round = 1, fill = 0.8 }
+OUTCOME = { sql = "case when enrollment.live_birth = 1 then 'LIVE_BIRTH' else 'STILLBIRTH' end" }
+
+[program.PREGNANCY.attributes]
+GIVEN_NAME = { words = { n = 2_000, s = 1.1, vocabulary = "given" } }
+FAMILY_NAME = { words = { n = 5_000, s = 1.05, vocabulary = "family" } }
+DATE_OF_BIRTH = { sql = "record.date - 365.25 * tracked_entity.age" }
+PHONE = { phone = true, fill = 0.7 }
+
+# A tracked entity is a child, enrolled at its birth. The children come from the Pregnancy
+# program's live births only.
+[program.CHILD]
+tracked_entities = { per_orgunit = 0 }
+enrollments = { status = { ACTIVE = 1 } }
+
+[program.CHILD.from]
+enrollments = { of = "PREGNANCY", as = "mother" }
+where = "mother.live_birth = 1"
+share = 0.9 # of the live births, the children who come to a facility
+relationship = "Mother and child"
+at = "mother.date + mother.days_to_birth"
+
+[program.CHILD.from.attributes]
+FAMILY_NAME = "mother.FAMILY_NAME"
+
+[program.CHILD.stage."Birth"]
+offset = 0
+
+[program.CHILD.stage."Vaccination"]
+count = { poisson = 3, min = 1, max = 5 }
+spacing = { sql = "28 + 14 * u('delay')" }
+
+[program.CHILD.values]
+BIRTH_WEIGHT = { normal = { mean = 3100, sd = 450 }, min = 500, max = 5000, round = 0 } # g
+DOSE_GIVEN = { bernoulli = 0.95 }
+
+[program.CHILD.attributes]
+GIVEN_NAME = { words = { n = 2_000, s = 1.1, vocabulary = "given" } }
+DATE_OF_BIRTH = { sql = "record.date" }
