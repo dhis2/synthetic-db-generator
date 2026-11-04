@@ -6,7 +6,7 @@ Prefer the Python standard library. Reach for a third-party dep only when stdlib
 doesn't cover the need (e.g. generating via DuckDB, loading via psycopg, DHIS2's API via httpx).
 When in doubt, ask before adding to `pyproject.toml`.
 
-DuckDB is pinned exactly: every draw goes through its functions, so a new version changes the
+DuckDB is pinned exactly: every draw goes through its functions, so a new version can change the
 data. Bump it deliberately, never as part of another change.
 
 ## Tooling
