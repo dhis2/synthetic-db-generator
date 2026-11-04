@@ -527,7 +527,16 @@ uv run ty check
 uv run pytest
 ```
 
-`uv run pre-commit install` runs ruff and ty on every commit. The tests need no Docker.
+`uv run pre-commit install` runs ruff and ty on every commit. CI runs the same hooks and the tests
+on `main` and on pull requests. The tests need no Docker.
+
+### Release
+
+A release is a tag `vX.Y.Z` on `main`, pushed to GitHub. Nothing is published: a repository that
+uses dbgen, such as [synthetic-databases][synthetic-databases], installs it from git by its tag.
+The version comes from the tag, so `dbgen --version` prints `dbgen 0.2.0 (commit 1a2b3c4)` on the
+tag and `dbgen 0.2.1.dev3 (commit 5d6e7f8)` three commits after it, with `uncommitted changes` if
+the checkout has any.
 
 ### Inspect the Parquet files
 

@@ -1,0 +1,33 @@
+# The checks of the pre-commit hooks (ruff, ty) and the tests, on main and on pull requests. A
+# release is a tag vX.Y.Z pushed on main: nothing is published, it is installed from git by tag.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      # Actions pinned by commit, which Dependabot updates (.github/dependabot.yml).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the tags, which the version is built from
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.13.7"
+      # --locked fails if uv.lock does not match pyproject.toml.
+      - run: uv sync --locked
+      - run: uv run --locked pre-commit run --all-files --show-diff-on-failure
+      - run: uv run --locked pytest

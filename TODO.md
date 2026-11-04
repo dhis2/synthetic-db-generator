@@ -9,10 +9,10 @@ version and publishes their dumps. dbgen builds at one DHIS2 image, the base its
 and knows no other version: no upgrades, no databases, no S3, no schedule. A move of the base
 replaces the table layout in a dbgen release, as dbgen never writes two.
 
-* A pull request job: `ruff`, `ty`, `pytest`, and district EX0201 of `examples/pregnancy/` built
-  at the base, about 2 minutes. No nightly: the pipeline's nightly upgrade follows master.
-* Release by tag, so the pipeline pins dbgen by tag rather than by a commit of
-  `teleivo/dhis2-db-generator`. Its dependency `dbgen` becomes `synthetic-db-generator`.
+* Build district EX0201 of `examples/pregnancy/` at the base in CI, about 2 minutes, beside the
+  checks and tests it runs. No nightly: the pipeline's nightly upgrade follows master.
+* Tag v0.1.0, and pin it in the pipeline rather than a commit of `teleivo/dhis2-db-generator`. Its
+  dependency `dbgen` becomes `synthetic-db-generator`.
 
 ## Next
 
