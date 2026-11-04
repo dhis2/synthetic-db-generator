@@ -1,6 +1,6 @@
 import pytest
 
-from dbgen import provenance
+from dbgen import cli, provenance
 
 A = "4e96494aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 B = "a445a46bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
@@ -82,3 +82,14 @@ def test_code_outside_dbgen_checkout_is_not_the_checkout_around_it(tmp_path, mon
     ).stdout.strip()
     assert state["commit"] != top
     assert state["version"]
+
+
+def test_version_names_the_commit_it_runs_from(capsys):
+    with pytest.raises(SystemExit) as e:
+        cli.main(["--version"])
+    assert e.value.code == 0
+    code = provenance.code()
+    printed = capsys.readouterr().out
+    assert printed.startswith(
+        f"dbgen {code['version']} (commit {(code['commit'] or 'unknown')[:7]}"
+    )

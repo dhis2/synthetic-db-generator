@@ -1,10 +1,11 @@
 [build-system]
-requires = ["setuptools>=80"]
+requires = ["setuptools>=80", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "synthetic-db-generator"
-version = "0.1.0"
+# From the latest git tag vX.Y.Z (setuptools-scm), such as 0.2.0 on it and 0.2.1.dev3 after it.
+dynamic = ["version"]
 description = "DHIS2 tracker databases for performance testing, from metadata and a spec"
 readme = "README.md"
 license = "BSD-3-Clause"
@@ -31,6 +32,13 @@ dbgen = "dbgen.cli:main"
 
 [tool.uv]
 package = true
+# Rebuild the package when the commit or the tags change, so its version is the checkout's.
+cache-keys = [{ file = "pyproject.toml" }, { git = { commit = true, tags = true } }]
+
+[tool.setuptools_scm]
+# No +g<commit>.d<date> suffix: dbgen --version and the provenance read the commit, and whether
+# the tree is clean, from git when they run, which a version built earlier cannot know.
+local_scheme = "no-local-version"
 
 [dependency-groups]
 dev = [

@@ -81,9 +81,29 @@ class HelpFormatter(argparse.HelpFormatter):
             yield from super()._iter_indented_subactions(action)
 
 
+class VersionAction(argparse.Action):
+    """--version: the version, from the git tag it was built at, and the commit it runs from,
+    taken when asked rather than at every start, as it runs git."""
+
+    def __init__(self, option_strings, dest=argparse.SUPPRESS, **kwargs):
+        super().__init__(option_strings, dest, nargs=0, default=argparse.SUPPRESS, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        from dbgen import provenance
+
+        code = provenance.code()
+        commit = (code["commit"] or "unknown")[:7]
+        dirty = ", uncommitted changes" if code["dirty"] else ""
+        print(f"dbgen {code['version']} (commit {commit}{dirty})")
+        parser.exit()
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         prog="dbgen", description=__doc__, epilog=EXAMPLES, formatter_class=HelpFormatter
+    )
+    parser.add_argument(
+        "--version", action=VersionAction, help="print the version and the git commit, and exit"
     )
     commands = parser.add_subparsers(
         title="commands", dest="command", required=True, metavar="<command>"
