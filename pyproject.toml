@@ -31,6 +31,8 @@ Repository = "https://github.com/dhis2/synthetic-db-generator"
 dbgen = "dbgen.cli:main"
 
 [tool.uv]
+# The uv versions that read and write this uv.lock. CI pins one of them (.github/workflows/ci.yml).
+required-version = ">=0.13.4,<0.14"
 package = true
 # Rebuild the package when the commit or the tags change, so its version is the checkout's.
 cache-keys = [{ file = "pyproject.toml" }, { git = { commit = true, tags = true } }]
