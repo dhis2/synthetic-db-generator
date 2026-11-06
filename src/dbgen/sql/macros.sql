@@ -89,13 +89,16 @@ create or replace macro rand_poisson(key, label, lam) as
             ).n::bigint
         end)[1];
 
--- A rank from 1 to n of a Zipf law of exponent s: rank k has weight k^-s. It inverts the CDF of
--- the law as a continuous one, and floors the result.
-create or replace macro rand_zipf(key, label, n, s) as
-    list_transform([{'u': rand_u(key, label), 'n': n::double, 's': s::double}], lambda z:
-        least(z.n, greatest(1, floor(case
-            when abs(z.s - 1) < 1e-9 then exp(z.u * ln(z.n + 1))
-            else pow(1 + z.u * (pow(z.n + 1, 1 - z.s) - 1), 1 / (1 - z.s))
+-- A rank from 1 to n of a Zipf–Mandelbrot law of exponent s and offset q: rank k has weight
+-- (k + q)^-s, so q = 0 is Zipf's law, and a larger q makes the first ranks more alike. It inverts
+-- the CDF of the law as a continuous one, and floors the result.
+create or replace macro rand_zipf(key, label, n, s, q) as
+    list_transform([{'u': rand_u(key, label), 'n': n::double, 's': s::double, 'q': q::double}],
+        lambda z: least(z.n, greatest(1, floor(case
+            when abs(z.s - 1) < 1e-9 then
+                exp(ln(1 + z.q) + z.u * (ln(z.n + 1 + z.q) - ln(1 + z.q))) - z.q
+            else pow(pow(1 + z.q, 1 - z.s)
+                + z.u * (pow(z.n + 1 + z.q, 1 - z.s) - pow(1 + z.q, 1 - z.s)), 1 / (1 - z.s)) - z.q
         end)))::bigint)[1];
 
 -- One of 90 syllables, for i from 1 to 90: a consonant and a vowel.
