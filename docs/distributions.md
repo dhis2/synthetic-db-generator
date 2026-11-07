@@ -246,5 +246,39 @@ age = { sql = "case when u('range') < 0.15 then 15 + 5 * u('age') when u('range'
 compares the same draw `u('range')` with the shares added up: 0.15, 0.15 + 0.30 = 0.45, and
 0.45 + 0.25 = 0.70. The gestational age in [sql](#sql) is drawn the same way.
 
+## Names and other words
+
+`words` writes a made-up word: it draws a rank from 1 to `n` of a vocabulary, and every record of
+a rank gets the same word. Fields of the same `vocabulary` share their words, so a mother's and
+her child's family names can match.
+
+```toml
+GIVEN_NAME = { words = { n = 20_000, s = 1.4, q = 25, vocabulary = "given" } }
+FAMILY_NAME = { words = { n = 100_000, s = 1.05, q = 20, vocabulary = "family" } }
+```
+
+The rank follows the [Zipf–Mandelbrot law][zm] with its usual parameters: rank $k$ has weight
+$(k + q)^{-s}$. `q` defaults to 0, which is Zipf's law; `count` writes that many words.
+
+Real names have a flat head and a steeper tail, which one Zipf exponent can't give: an `s` that
+makes the tail right gives the first name far too many people. The offset `q` makes the first
+ranks alike, and `s` sets the tail. The lines above are fitted to [US given names][ssa] of women
+born 1967 to 2001, and to the [2010 US Census surnames][census]:
+
+| Share of people | top name | top 10 | top 100 |
+|---|---|---|---|
+| given names | 2.1% | 12% | 46% |
+| `n = 40_000, s = 1.1` (Zipf) | 10% | 33% | 57% |
+| `n = 20_000, s = 1.4, q = 25` | 1.6% | 13% | 50% |
+| surnames | 0.8% | 4.9% | 17% |
+| `n = 100_000, s = 1.05, q = 20` | 0.7% | 5.6% | 24% |
+
+How concentrated family names are differs most between countries: a smaller `q` or a larger `s`
+gives the first names more people. The first name matters for performance, as a search for it
+matches the most records.
+
 [leis]: https://www.vldb.org/pvldb/vol9/p204-leis.pdf
 [dsb]: https://www.vldb.org/pvldb/vol14/p3376-ding.pdf
+[zm]: https://en.wikipedia.org/wiki/Zipf%E2%80%93Mandelbrot_law
+[ssa]: https://www.ssa.gov/oact/babynames/limits.html
+[census]: https://www.census.gov/topics/population/genealogy/data/2010_surnames.html
