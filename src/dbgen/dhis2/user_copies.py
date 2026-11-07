@@ -183,6 +183,10 @@ def _insert(cur: psycopg.Cursor, copies: list[tuple], links: dict[str, str]) -> 
         f"select {select} from user_copy c join userinfo t on t.uid = c.template_uid "
         "order by c.username",
     )
+    # Autovacuum is off in the build and never analyzes a temporary table, so the planner would
+    # take userinfo for the few users DHIS2 created, and join the copies to it in a nested loop,
+    # quadratic in the users. ANALYZE counts the rows of its own transaction.
+    _execute(cur, "analyze user_copy, userinfo")
     for table, column in ORG_UNIT_LINKS.items():
         _execute(
             cur,
