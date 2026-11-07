@@ -10,6 +10,10 @@ services:
     image: "${POSTGRES_IMAGE:?set by dbgen from lock.toml}"
     mem_limit: ${DBGEN_DB_MEMORY:?set by dbgen}
     cpus: ${DBGEN_DB_CPUS:?set by dbgen}
+    # Under an init process: as PID 1, Postgres would reap what is orphaned in its container, such
+    # as the healthcheck's pg_isready when the check times out, take its exit code 2 for a crashed
+    # backend and restart, ending every connection.
+    init: true
     # Parallel index builds take maintenance_work_mem (1 GB) of shared memory; counts toward mem_limit.
     shm_size: 2gb
     # Build-only settings: nothing here needs to survive a crash, the result is dumped.
