@@ -15,8 +15,9 @@ write access but no data access the admin. A program whose sharing has no group 
 that kind its clerks' groups, so every user reads the programs it works with. Its tracked entity
 type must share data with the clerks' and officers' groups too, as DHIS2 checks both.
 
-A user is named "User" and its number in the order the users are made, so no name is a real
-person's. Usernames are lower case, as DHIS2 matches them case-sensitively:
+A user's first name and surname are made-up words drawn by its username, as the MNCH spec draws
+its people's names (docs/distributions.md), so no name is a real person's. Usernames are lower
+case, as DHIS2 matches them case-sensitively:
 <prefix>.<org unit code>.<n> of a clerk, <prefix>.<level>.<org unit code> of an officer and
 <prefix>.admin.
 
@@ -37,6 +38,7 @@ from dbgen import parquet, provenance
 from dbgen.config import Build, listed
 from dbgen.errors import InternalError, UsageError
 from dbgen.metadata import Metadata
+from dbgen.orgunits import connect
 from dbgen.spec import slug
 from dbgen.uid import uid
 
@@ -52,8 +54,8 @@ COLUMNS = parquet.describe(
         "kind": "clerk, officer or admin, which sets the user role and the user groups",
         "uid": "DHIS2 UID, a hash of the username",
         "username": "Lower case: <prefix>.<code>.<n>, <prefix>.<level>.<code> or <prefix>.admin",
-        "first_name": "Given name, User",
-        "surname": "Family name, the user's number from 01 in the order they are made",
+        "first_name": "First name, a made-up word drawn by the username",
+        "surname": "Family name, a made-up word drawn by the username",
         "orgunit_uid": "UID of the org unit of a clerk, null for the others",
         "capture_uid": "UID of the org unit the user captures data in",
         "search_uid": "UID of the org unit the user searches: a clerk's of users.search_level",
@@ -127,9 +129,8 @@ def build_users(build: Build, effective: dict) -> list[dict]:
                 "kind": kind,
                 "uid": uid("user", username),
                 "username": username,
-                "first_name": "User",
-                # DHIS2 takes a surname of 2 characters or more.
-                "surname": f"{len(users) + 1:02d}",
+                "first_name": None,
+                "surname": None,
                 "orgunit_uid": orgunit,
                 "capture_uid": capture,
                 "search_uid": view,
@@ -143,8 +144,27 @@ def build_users(build: Build, effective: dict) -> list[dict]:
     for ou_uid, code, level_name in officers_at:
         add("officer", f"{prefix}.{slug(level_name)}.{code.lower()}", ou_uid, ou_uid)
     add("admin", f"{prefix}.admin", root, root)
+    drawn = names([u["username"] for u in users], effective["build"]["seed"])
+    for u, (first_name, surname) in zip(users, drawn, strict=True):
+        u["first_name"], u["surname"] = first_name, surname
     check_uids(users)
     return users
+
+
+# The MNCH spec's GIVEN_NAME and FAMILY_NAME, fitted to US names. Each word is 5 to 9 letters, as
+# DHIS2 2.42.0 takes a first name and surname of 2 to 160.
+FIRST_NAME = "word('given', rand_zipf(username, 'users.first_name', 20000, 1.4, 25))"
+SURNAME = "word('family', rand_zipf(username, 'users.surname', 100000, 1.05, 20))"
+
+
+def names(usernames: list[str], seed: int) -> list[tuple[str, str]]:
+    """The first name and surname of each username, drawn by the username, so by no row order."""
+    con = connect(seed)
+    return con.execute(
+        f"select {FIRST_NAME}, {SURNAME} from unnest(?) with ordinality as t(username, i) "
+        "order by i",
+        [usernames],
+    ).fetchall()
 
 
 def check_uids(users: list[dict]) -> None:
