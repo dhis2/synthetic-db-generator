@@ -87,6 +87,9 @@ the importer's checks but not always the program rules, which the spec satisfies
 | repeatable stage, `standardInterval` | how many events, at what spacing |
 | program's category combo | an attribute option combo per event, uniform |
 
+A default knows a field's type, not what it holds. If a query filters on a field, set its
+[distribution](docs/distributions.md) in the spec, as its values shape the plan.
+
 ### The spec, key by key
 
 The [MNCH spec][mnch] of synthetic-databases fills DHIS2's ANC and EIR packages and sets every key.
