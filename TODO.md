@@ -42,19 +42,6 @@ In order:
 
 ## Later
 
-* If a release grows past a district (the pipeline builds district QP1613 on a standard runner,
-  4 CPUs and 16 GB):
-  * drop the unique constraints of the loaded tables during `load` too, such as
-    `unique_trackerevent_uid`. `load` drops only the indexes no constraint owns, so every event
-    inserts its UID, random to its id, into a B-tree; `copy event` is 114 s of QP1613's 158 s of
-    `load`. Adding the constraint back builds the index in one sort and checks uniqueness all the
-    same.
-  * dump the events in key ranges. Nearly all of `dump` is `pg_dump`'s one `COPY` of
-    `trackerevent`, through one connection, with `-Fd --jobs` too: 56 s for QP1613, 20 minutes
-    for 49M events on an earlier generator, where four `COPY`s by `eventid` range took a third of
-    the time of one. Assemble the plain SQL from `pg_dump --section=pre-data`, the other tables'
-    data, the ranges in one `COPY ... FROM stdin` block and `--section=post-data`, each its own
-    gzip member, which `gunzip -c` reads as one stream.
 * Compare the planner's misestimates of the tracker queries on a build with those on a real
   instance (their q-errors), when an implementation's numbers are at hand, never as a step of a
   release: an implementation answers in weeks, and a perf database is published without it. The
