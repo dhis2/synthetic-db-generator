@@ -93,14 +93,15 @@ def build_users(build: Build, effective: dict) -> list[dict]:
     con = duckdb.connect()
     con.execute("create table ou as select * from read_parquet(?) where kept", [str(orgunits)])
     [(root,)] = con.execute("select uid from ou where level = 1").fetchall()
+    # A path is the codes from the root to the org unit, the n-th of level n. The joins match a
+    # code: one on whether a path holds it compares every org unit with every other.
     # Each org unit of a capture level, with its ancestor of the search level.
     clerks_at = con.execute(
         f"""
         select o.uid, o.code, coalesce(o.clerks, {int(spec["clerks"])}),
                coalesce(s.uid, o.uid)
         from ou o
-        left join ou s on s.level = {search_level}
-          and list_contains(string_split(o.path, '/'), s.code)
+        left join ou s on s.code = split_part(o.path, '/', {search_level})
         where o.level in (select unnest(?))
         order by o.code
         """,
@@ -110,9 +111,10 @@ def build_users(build: Build, effective: dict) -> list[dict]:
     officers_at = con.execute(
         """
         select distinct a.uid, a.code, a.level_name
-        from ou o
-        join ou a on list_contains(string_split(o.path, '/'), a.code)
-        where o.level in (select unnest(?)) and a.level in (select unnest(?))
+        from (select unnest(string_split(path, '/')) as code from ou
+              where level in (select unnest(?))) o
+        join ou a on a.code = o.code
+        where a.level in (select unnest(?))
         order by a.level_name, a.code
         """,
         [capture_levels, officer_levels],
@@ -214,8 +216,9 @@ def check_type_sharing(name: str, program: dict, metadata: Metadata, found: dict
 
 def metadata_payload(users: list[dict], effective: dict, kinds: dict[str, list[str]]) -> dict:
     password = effective["users"]["password"]
+    role_uids = {kind: uid("role", kind) for kind in ROLES}
     roles = [
-        {"id": uid("role", kind), "name": role["name"], "authorities": role["authorities"]}
+        {"id": role_uids[kind], "name": role["name"], "authorities": role["authorities"]}
         for kind, role in ROLES.items()
     ]
     payload_users = [
@@ -225,7 +228,7 @@ def metadata_payload(users: list[dict], effective: dict, kinds: dict[str, list[s
             "firstName": u["first_name"],
             "surname": u["surname"],
             "password": password,
-            "userRoles": [{"id": uid("role", u["kind"])}],
+            "userRoles": [{"id": role_uids[u["kind"]]}],
             "organisationUnits": [{"id": u["capture_uid"]}],
             "teiSearchOrganisationUnits": [{"id": u["search_uid"]}],
             "dataViewOrganisationUnits": [{"id": u["view_uid"]}],
