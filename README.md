@@ -480,7 +480,9 @@ compile ─▶ orgunits ─▶ users ─┬─▶ generate ─────┐
 ### Design choices
 
 * **Metadata through DHIS2's API, tracker data through Postgres `COPY`**, as it is too large for
-  the API. The [checks](#checks) stand in for the importer's validation.
+  the API. The [checks](#checks) stand in for the importer's validation. The org units and the
+  users are metadata too large for it as well: the API imports a few of each level or kind, which
+  `bootstrap` copies in SQL for the others.
 * **Metadata by UID until `load`**: `generate` writes DHIS2's tables with the metadata's UIDs,
   which `load` swaps for `bootstrap`'s internal IDs as it copies, and builds `eventdatavalues` from
   lists of values. So `generate` needs no DHIS2, and a spec change reruns `generate` and `load`,

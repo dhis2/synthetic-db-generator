@@ -1,13 +1,15 @@
 """`dbgen stage bootstrap`: DHIS2 on an empty database, the metadata through the API, ID maps.
 
 1. Start Postgres and DHIS2 (docker/compose.yaml). Flyway creates the schema on first start.
-2. Set the system settings that say the data is made up, import the org units, then the metadata
-   files as they are, in the spec's order, then the user roles and the users (of each kind only
-   the first).
+2. Set the system settings that say the data is made up, import the org unit levels and a few
+   org units (orgunit_copies.py), then the metadata files as they are, in the spec's order, then
+   the user roles and the users (of each kind only the first).
 3. Add what depends on the build, and so cannot be in the metadata: the users to the user groups
-   the metadata ships (users.py), the programs to the org units of the build that they register
-   at, and the root to the built-in admin, whom the API calls log in as.
-4. Stop DHIS2 and copy the other users of each kind from its first in SQL (user_copies.py).
+   the metadata ships (users.py), and the root to the built-in admin, whom the API calls log in
+   as.
+4. Stop DHIS2, and in SQL copy the other org units of each level from one the API imported
+   (orgunit_copies.py), assign the programs to the org units of the build that they register at,
+   and copy the other users of each kind from its first (user_copies.py).
 5. Export the internal IDs DHIS2 assigned, and the metadata the checks read, as ID maps to
    output/stage/<build>/bootstrap/<table>.parquet, and mark the database with the run (see
    provenance.py).
@@ -23,12 +25,13 @@ import sys
 
 import duckdb
 import httpx
+import psycopg
 
 from dbgen import compile as compile_stage
 from dbgen import parquet, provenance, timing
 from dbgen.config import Build, listed
-from dbgen.dhis2 import client, user_copies
-from dbgen.errors import UsageError
+from dbgen.dhis2 import client, orgunit_copies, user_copies
+from dbgen.errors import InternalError, UsageError
 
 # The ID maps, the query of each by its name: load reads each as table b_<name>, to swap the
 # UIDs of generate's tables for internal IDs. Each query names its columns, so a column DHIS2
@@ -175,20 +178,23 @@ def run(build: Build) -> None:
     with timing.timed(build.dir, "bootstrap"):
         orgunits = json.loads((build.stage_dir("orgunits") / "orgunits.json").read_text())
         users = json.loads((build.stage_dir("users") / "users.json").read_text())
-        api_users, copies = user_copies.split(build, users)
+        api_users, copied_users = user_copies.split(build, users)
+        api_orgunits, copied_orgunits = orgunit_copies.split(orgunits, api_users["users"])
         with client.running():
-            _import(build, effective, orgunits, api_users)
+            _import(effective, api_orgunits, api_users)
             client.stop(("web", "web-healthcheck"))
             # One transaction, committed when the connection closes.
             with client.connect() as pg, pg.cursor() as cur:
-                user_copies.copy(cur, copies)
+                orgunit_copies.copy(cur, copied_orgunits)
+                assign_programs(build, effective, cur)
+                user_copies.copy(cur, copied_users)
             export_idmaps(build)
             with client.connect(autocommit=True) as pg, pg.cursor() as cur:
                 provenance.mark_database(cur, build, run_id)
     provenance.record(build, "bootstrap", parents, effective, run=run_id)
 
 
-def _import(build: Build, effective: dict, orgunits: dict, users: dict) -> None:
+def _import(effective: dict, orgunits: dict, users: dict) -> None:
     root_name = effective["orgunits"]["root"]["name"]
     settings = {
         "applicationTitle": f"{root_name} (synthetic)",
@@ -207,7 +213,6 @@ def _import(build: Build, effective: dict, orgunits: dict, users: dict) -> None:
         import_metadata(api, {"userRoles": users["userRoles"], "users": users["users"]}, "users")
         add_group_members(api, users["userGroupMembers"])
         root = orgunits["organisationUnits"][0]["id"]
-        assign_programs(build, effective, api)
         assign_admin_scope(api, admin_uid, root)
 
 
@@ -272,8 +277,11 @@ def add_group_members(api: httpx.Client, members: dict[str, list[dict]]) -> None
     print(f"bootstrap: {count} memberships of {len(members)} user groups", file=sys.stderr)
 
 
-def assign_programs(build: Build, effective: dict, api: httpx.Client) -> None:
-    """Assign each program to the org units of its level, as an implementer would."""
+def assign_programs(build: Build, effective: dict, cur: psycopg.Cursor) -> None:
+    """Assign each program to the org units of its level, as an implementer would.
+
+    In SQL, as most org units are copied in SQL after the API calls (orgunit_copies.py). The
+    API's /api/programs/{uid}/organisationUnits writes only these rows."""
     orgunits = build.stage_dir("orgunits") / "orgunits.parquet"
     for p in effective["programs"]:
         uids = [
@@ -283,14 +291,20 @@ def assign_programs(build: Build, effective: dict, api: httpx.Client) -> None:
                 [str(orgunits), p["orgunit_level"]],
             ).fetchall()
         ]
-        response = api.post(
-            f"/api/programs/{p['uid']}/organisationUnits",
-            json={"additions": [{"id": u} for u in uids]},
+        cur.execute(
+            """
+            insert into program_organisationunits (programid, organisationunitid)
+            select p.programid, o.organisationunitid
+            from program p
+            join organisationunit o on o.uid = any(%s)
+            where p.uid = %s
+            """,
+            [uids, p["uid"]],
         )
-        if not response.is_success:
-            raise UsageError(
-                f"assigning {p['name']} to {len(uids)} org units failed: HTTP "
-                f"{response.status_code} {response.text[:500]}"
+        if cur.rowcount != len(uids):
+            raise InternalError(
+                f"assigned {p['name']} to {cur.rowcount} of its {len(uids)} org units: the "
+                "program or some of its org units are not in the database"
             )
         print(f"bootstrap: {p['key']} assigned to {len(uids)} org units", file=sys.stderr)
 
