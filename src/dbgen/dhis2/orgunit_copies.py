@@ -1,13 +1,16 @@
-"""Org units copied in SQL from one of their level DHIS2 created, instead of through the API.
+"""Org units copied in SQL from one of their level the API imported, instead of through the API.
 
-The metadata API takes the org units in one atomic import, which for 250,000 org units outlasts
-the client's timeout of 10 minutes with DHIS2's default heap, and commits in 5 minutes with a heap
-of 13 GiB. An org unit of the build differs from another of its level only in the values of its
-own, so bootstrap imports a few through the API, and after the packages and the users copies the
-row of one of each level for the others, as user_copies.py does the users:
+The metadata API imports org units in one atomic request: it validates them all and holds them in
+memory before it writes any, so its time and DHIS2's heap grow with the org units: 250,000 commit
+in 5 minutes on a heap of 13 GiB, and outlast the client's timeout of 10 minutes on the default
+of 3 GiB. An org unit differs from another of its level only in values of its own, so bootstrap
+imports a few through the API, and copies the others in SQL from one of their level, as
+user_copies.py does the users. The copy is one insert, linear in the org units, and takes no heap
+of DHIS2's: 250,000 take 16 s.
 
 * The API imports the levels; the root; the first org unit of each level by code; the org units
-  of the users the API imports, which they must exist for; and the ancestors of these.
+  of the users the API imports, which they must exist for; and the ancestors of these: a few of
+  each level.
 * organisationunit: the row of the first org unit of the copy's level the API imported, with the
   copy's own id, UID, code, names, opening date, parent, path and level, the values the payload
   and the hierarchy set (OWN_COLUMNS). A key of the payload the copy does not set fails it.
@@ -18,11 +21,8 @@ copy would share with its template where DHIS2's schema wants it unique fails th
 constraint Postgres names.
 
 The API checks what the copy does not, such as the lengths of the names: the orgunits stage
-writes them as the API takes them.
-
-The API imports at most 4 org units of each level, and SQL copies the others: 250,252 of the
-250,256 of the platform-perf example, in 16 s. The programs are assigned to their org units in SQL
-too, after the copy.
+writes them as the API takes them. bootstrap assigns the programs to their org units in SQL too,
+after the copy.
 
 DHIS2 must not run during the copy: its caches would miss the new org units.
 """
