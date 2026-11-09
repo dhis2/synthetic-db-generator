@@ -342,8 +342,9 @@ uv run dbgen build examples/pregnancy/pregnancy.toml --orgunit EX0201
 This builds district EX0201 of [the example](#the-example), 518 tracked entities and 4,055 events,
 in about 2 minutes into `output/pregnancy-EX0201/`, a dump of half a MiB. The first build also
 pulls the Docker images pinned in `src/dbgen/lock.toml`. Every build empties the build database
-of its checkout first, so run one at a time. Two checkouts have a database each, but share its
-ports, so a build fails to start while another runs. The dumps in `output/` stay.
+of its checkout first, so run one at a time in a checkout. Builds of several checkouts run side by
+side, each with its database, as far as the memory allows (see [Requirements](#requirements)).
+dbgen prints the host ports of Postgres and DHIS2 at each start. The dumps in `output/` stay.
 
 ### Choose the area
 

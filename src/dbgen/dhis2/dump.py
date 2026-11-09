@@ -45,7 +45,7 @@ def run(build: Build) -> Path:
     manifest_file.unlink(missing_ok=True)
     with timing.timed(build.dir, "dump") as t:
         with client.running(build.project, ("db",), timeout=300):
-            with client.connect(autocommit=True) as pg, pg.cursor() as cur:
+            with client.connect(build.project, autocommit=True) as pg, pg.cursor() as cur:
                 provenance.check_database(cur, provenance.bootstrap_run(parent_stages["load"]))
                 check_row_counts(cur, checksums)
                 cur.execute(

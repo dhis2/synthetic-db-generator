@@ -64,7 +64,7 @@ def run(build: Build) -> dict:
         skip = importer.unvalidated(effective)
         payloads = [importer.without(p, skip) for p in _payloads(build, effective)]
         with client.running(build.project):
-            with client.connect(autocommit=True) as pg, pg.cursor() as cur:
+            with client.connect(build.project, autocommit=True) as pg, pg.cursor() as cur:
                 provenance.check_database(cur, parents["bootstrap"]["run"])
                 cur.execute("select exists (select from trackedentity)")
                 (loaded,) = cur.fetchone() or (False,)
@@ -76,7 +76,7 @@ def run(build: Build) -> dict:
                     )
                 known = importer.names(cur)
             errors, warnings = importer.Tally(), importer.Tally()
-            with client.api() as api:
+            with client.api(build.project) as api:
                 for i, payload in enumerate(payloads, 1):
                     importer.validate(api, payload, errors, warnings, known)
                     if i % 20 == 0 or i == len(payloads):
@@ -113,7 +113,7 @@ def run(build: Build) -> dict:
 def _holds(project: str, run: str) -> bool:
     """Whether the build database holds the bootstrap of run."""
     with client.running(project, ("db",), timeout=300):
-        with client.connect(autocommit=True) as pg, pg.cursor() as cur:
+        with client.connect(project, autocommit=True) as pg, pg.cursor() as cur:
             try:
                 provenance.check_database(cur, run)
             except UsageError:

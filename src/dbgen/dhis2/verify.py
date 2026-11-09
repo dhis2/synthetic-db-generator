@@ -54,12 +54,16 @@ def run(build: Build) -> dict:
     }
     with timing.timed(build.dir, "verify"):
         with client.running(build.project, ("db",), timeout=300):
-            with client.connect(autocommit=True) as pg, pg.cursor() as cur:
+            with client.connect(build.project, autocommit=True) as pg, pg.cursor() as cur:
                 provenance.check_database(cur, provenance.bootstrap_run(parents["load"]))
                 checks, check_seconds = postload_checks(cur)
                 samples = {p["uid"]: _sample(cur, p["uid"]) for p in effective["programs"]}
             client.start(build.project, ("web", "web-healthcheck"))
-            with client.api() as api, client.connect(autocommit=True) as pg, pg.cursor() as cur:
+            with (
+                client.api(build.project) as api,
+                client.connect(build.project, autocommit=True) as pg,
+                pg.cursor() as cur,
+            ):
                 trigram = trigram_indexes(api, cur, trigram_attributes)
                 known = importer.names(cur)
                 skip = unique_attributes(cur) | importer.unvalidated(effective)
@@ -464,7 +468,7 @@ def smoke(api: httpx.Client, cur, effective: dict, metadata) -> list[dict]:
             else:
                 if who not in clients:
                     clients[who] = httpx.Client(
-                        base_url=client.BASE_URL, auth=(who, password), timeout=SMOKE_TIMEOUT
+                        base_url=api.base_url, auth=(who, password), timeout=SMOKE_TIMEOUT
                     )
                 http = clients[who]
             status, items, seconds = _timed(http, path, params)

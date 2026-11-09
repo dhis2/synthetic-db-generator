@@ -18,9 +18,10 @@ from dbgen.config import DOCKER
 from dbgen.errors import UsageError
 
 COMPOSE_FILE = DOCKER / "compose.yaml"
-BASE_URL = "http://127.0.0.1:28080"
 ADMIN = ("admin", "district")
-PG_DSN = "host=127.0.0.1 port=25432 dbname=dhis user=dhis password=dhis"
+# The container port of each service dbgen connects to. Docker publishes each on a free host port
+# of its choice at every start, so builds of several checkouts run side by side (port).
+PORTS = {"db": 5432, "web": 8080}
 
 # The caps of the stack, which compose.yaml takes, and the memory start leaves free beside it for
 # DuckDB and the rest of the machine. An environment variable of the same name replaces a
@@ -80,6 +81,8 @@ def start(project: str, services: tuple[str, ...] = SERVICES, timeout: int = 900
             f"{REQUIRED_DISK_GIB} GiB. Free some (docker system df shows what uses it)."
         )
     compose(project, "up", "--detach", "--wait", "--wait-timeout", str(timeout), *services)
+    published = [f"{s} at 127.0.0.1:{port(project, s)}" for s in services if s in PORTS]
+    print(f"compose {project}: {', '.join(published)}", file=sys.stderr)
 
 
 def stop(project: str, services: tuple[str, ...] = ()) -> None:
@@ -173,10 +176,24 @@ def _docker(
     return result.stdout.strip() if capture else ""
 
 
-def api(timeout: float = 600) -> httpx.Client:
+def port(project: str, service: str) -> int:
+    """The host port Docker published the service's port of PORTS on, which changes at every
+    start: so looked up for each connection."""
+    command, env = compose_command(project, "port", service, str(PORTS[service]))
+    published = _docker(f"docker compose port {service}", command, env, capture=True)
+    return int(published.rsplit(":", 1)[1])
+
+
+def dsn(project: str) -> str:
+    """The connection string of the project's Postgres."""
+    return f"host=127.0.0.1 port={port(project, 'db')} dbname=dhis user=dhis password=dhis"
+
+
+def api(project: str, timeout: float = 600) -> httpx.Client:
     """The Web API, as admin. A context manager, which closes it."""
-    return httpx.Client(base_url=BASE_URL, auth=ADMIN, timeout=timeout)
+    base_url = f"http://127.0.0.1:{port(project, 'web')}"
+    return httpx.Client(base_url=base_url, auth=ADMIN, timeout=timeout)
 
 
-def connect(**kwargs) -> psycopg.Connection:
-    return psycopg.connect(PG_DSN, **kwargs)
+def connect(project: str, **kwargs) -> psycopg.Connection:
+    return psycopg.connect(dsn(project), **kwargs)
