@@ -1087,8 +1087,17 @@ def format_value(raw: str, value_type: str, gen) -> str:
 # varchar value for the record of key.
 
 
+WORDS_KEYS = ("n", "s", "q", "count", "vocabulary")
+
+
 def _words(prog: Program, spec, key: str, label: str, vt: str) -> str:
     spec = spec if isinstance(spec, dict) else {}
+    unknown = [k for k in spec if k not in WORDS_KEYS]
+    if unknown:
+        raise UsageError(
+            f"{prog.where(label)}.words: unknown key {', '.join(unknown)}; words takes "
+            f"{', '.join(WORDS_KEYS)}"
+        )
     n, s, count = spec.get("n", 5000), spec.get("s", 1.1), spec.get("count", 1)
     q = spec.get("q", 0)
     vocabulary = spec.get("vocabulary", label)
