@@ -87,6 +87,9 @@ the importer's checks but not always the program rules, which the spec satisfies
 | repeatable stage, `standardInterval` | how many events, at what spacing |
 | program's category combo | an attribute option combo per event, uniform |
 
+A default knows a field's type, not what it holds. If a query filters on a field, set its
+[distribution](docs/distributions.md) in the spec, as its values shape the plan.
+
 ### The spec, key by key
 
 The [MNCH spec][mnch] of synthetic-databases fills DHIS2's ANC and EIR packages and sets every key.
@@ -163,7 +166,7 @@ yeZTdZuEZT6 = { normal = { mean = "enrollment.hb", sd = 0.6 }, min = 4, max = 18
 
 [program.RMNCAH_ANC.attributes]
 # ...
-GIVEN_NAME = { words = { n = 40_000, s = 1.1, vocabulary = "given" } }
+GIVEN_NAME = { words = { n = 20_000, s = 1.4, q = 25, vocabulary = "given" } }
 # ...
 "Mobile phone number" = { phone = true, fill = 0.7 }
 # ...
@@ -471,7 +474,7 @@ compile ─▶ orgunits ─▶ users ─┬─▶ generate ─────┐
 | `orgunits` | draw the org unit hierarchy from the spec's levels | DuckDB |
 | `users` | make the clerks, officers and admin | DuckDB |
 | `generate` | draw the tracker data and write it as DHIS2's tables, then check it | DuckDB |
-| `bootstrap` | start DHIS2 on an empty database, import the org units, users and metadata | DHIS2, Postgres |
+| `bootstrap` | start DHIS2 on an empty database, import the metadata and a few org units and users, copy the others in SQL | DHIS2, Postgres |
 | `load` | bulk load the tracker tables, then build the indexes and analyze | Postgres |
 | `verify` | check the loaded database, and send a sample of records through DHIS2's importer | DHIS2, Postgres |
 | `dump` | dump the database and write its manifest | Postgres |
@@ -481,8 +484,10 @@ compile ─▶ orgunits ─▶ users ─┬─▶ generate ─────┐
 
 ### Design choices
 
-* **Metadata through DHIS2's API, tracker data through Postgres `COPY`**, as it is too large for
-  the API. The [checks](#checks) stand in for the importer's validation.
+* **Metadata through DHIS2's API, what is too large for it in SQL**: the tracker data through
+  Postgres `COPY`, whose validation the [checks](#checks) stand in for. Of the org units and the
+  users, the API imports a few of each level or kind, and `bootstrap` copies the others in SQL
+  from them, then assigns the programs to their org units.
 * **Metadata by UID until `load`**: `generate` writes DHIS2's tables with the metadata's UIDs,
   which `load` swaps for `bootstrap`'s internal IDs as it copies, and builds `eventdatavalues` from
   lists of values. So `generate` needs no DHIS2, and a spec change reruns `generate` and `load`,

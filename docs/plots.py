@@ -2,6 +2,7 @@
 
 Each example is a line of a spec, as the guide shows it. It is compiled as a build compiles it and
 drawn 100,000 times, and its histogram written to docs/img/<name>.svg. A draw a bound clips is red.
+A rank picture draws 100,000 words for each value of a parameter of words.
 
     uv run python docs/plots.py
 
@@ -59,6 +60,12 @@ EXAMPLES = [
     ),
 ]
 
+# name, the words a picture draws, and the key it varies with its values: a line per value.
+RANKS = [
+    ("words-q", {"n": 20_000, "s": 1.4}, "q", [0, 25, 100]),
+    ("words-s", {"n": 20_000, "q": 25}, "s", [1.1, 1.4, 2]),
+]
+
 W, H = 560, 210
 LEFT, RIGHT, TOP, BOTTOM = 16, 16, 34, 40
 STYLE = """<style>
@@ -73,6 +80,18 @@ text.clip { font-weight: 600; }
 .axis { stroke: var(--line); }
 .mark { stroke: var(--ink); stroke-dasharray: 4 3; }
 .mark-label { fill: var(--ink); }
+</style>"""
+# The lines of a rank picture, a colour each.
+LINES = """<style>
+.l0 { stroke: var(--bar); }
+.l1 { stroke: #b7791f; }
+.l2 { stroke: #2f855a; }
+@media (prefers-color-scheme: dark) {
+  .l1 { stroke: #f0b453; }
+  .l2 { stroke: #68d391; }
+}
+.l0, .l1, .l2 { fill: none; stroke-width: 2; }
+.grid { stroke: var(--line); stroke-dasharray: 2 4; }
 </style>"""
 
 
@@ -208,6 +227,50 @@ def histogram(values: list, clipped: list[bool], distribution: dict) -> str:
     return "\n".join(out) + "\n"
 
 
+def ranks(name: str, words: dict, key: str, values: list) -> str:
+    """The share of records of each word against its rank, on log scales, a line per value of
+    key. It counts words, as a build writes them, so ranks whose words collide count as one."""
+    height, left, top = 240, 52, 16
+    bottom = height - 40
+    xmax, ymin, ymax = 1000, 1e-4, 0.5
+    con = connect(SEED)
+
+    def sx(rank: float) -> float:
+        return left + math.log10(rank) / math.log10(xmax) * (W - RIGHT - left)
+
+    def sy(p: float) -> float:
+        return bottom - math.log10(p / ymin) / math.log10(ymax / ymin) * (bottom - top)
+
+    out = [f'<line class="axis" x1="{left}" x2="{W - RIGHT}" y1="{bottom}" y2="{bottom}"/>']
+    for r in (1, 10, 100, 1000):
+        out.append(text(sx(r), bottom + 15, f"{r:,}", "end" if r == xmax else "middle"))
+    for p, label in ((0.0001, "0.01%"), (0.001, "0.1%"), (0.01, "1%"), (0.1, "10%")):
+        out.append(
+            f'<line class="grid" x1="{left}" x2="{W - RIGHT}" y1="{sy(p):.1f}" y2="{sy(p):.1f}"/>'
+        )
+        out.append(text(left - 6, sy(p) + 4, label, "end"))
+    for i, v in enumerate(values):
+        w = {**words, key: v}
+        sql = f"word('name', rand_zipf(i, 'name', {w['n']}, {w['s']}, {w['q']}))"
+        counts = con.execute(
+            f"select count(*) from (select {sql} as w from range({N}) t(i)) "
+            f"group by w order by 1 desc limit {xmax}"
+        ).fetchall()
+        points = [(k, c / N) for k, (c,) in enumerate(counts, 1) if c / N >= ymin]
+        line = " ".join(f"{sx(k):.1f},{sy(p):.1f}" for k, p in points)
+        out.append(f'<polyline class="l{i}" points="{line}"/>')
+        y, x = top + 4 + 16 * i, W - RIGHT - 70
+        out.append(f'<line class="l{i}" x1="{x}" x2="{x + 12}" y1="{y - 8}" y2="{y - 8}"/>')
+        out.append(text(x + 18, y - 4, f"{key} = {v}", "start"))
+    fixed = ", ".join(f"{k} = {v:,}" for k, v in words.items())
+    out.append(text(W / 2, height - 6, f"rank of the word, {fixed}", "middle"))
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {height}" width="{W}" '
+        f'height="{height}" role="img">\n<title>{escape(name)}: share of records by rank</title>\n'
+        f"{STYLE}\n{LINES}\n" + "\n".join(out) + "\n</svg>\n"
+    )
+
+
 def ticks(low: float, high: float) -> list[float]:
     """About six round values from low to high."""
     step = (high - low) / 6
@@ -257,6 +320,8 @@ def write(directory: Path = IMG) -> None:
     directory.mkdir(parents=True, exist_ok=True)
     for name, line, unit in EXAMPLES:
         (directory / f"{name}.svg").write_text(svg(line, unit))
+    for name, words, key, values in RANKS:
+        (directory / f"{name}.svg").write_text(ranks(name, words, key, values))
 
 
 if __name__ == "__main__":

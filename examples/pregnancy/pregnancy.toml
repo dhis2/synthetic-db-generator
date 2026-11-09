@@ -78,8 +78,8 @@ HB = { normal = { mean = "enrollment.hb", sd = 0.6 }, min = 4, max = 18, round =
 OUTCOME = { sql = "case when enrollment.live_birth = 1 then 'LIVE_BIRTH' else 'STILLBIRTH' end" }
 
 [program.PREGNANCY.attributes]
-GIVEN_NAME = { words = { n = 2_000, s = 1.1, vocabulary = "given" } }
-FAMILY_NAME = { words = { n = 5_000, s = 1.05, vocabulary = "family" } }
+GIVEN_NAME = { words = { n = 20_000, s = 1.4, q = 25, vocabulary = "given" } }
+FAMILY_NAME = { words = { n = 100_000, s = 1.05, q = 20, vocabulary = "family" } }
 DATE_OF_BIRTH = { sql = "record.date - 365.25 * tracked_entity.age" }
 PHONE = { phone = true, fill = 0.7 }
 
@@ -111,5 +111,5 @@ BIRTH_WEIGHT = { normal = { mean = 3100, sd = 450 }, min = 500, max = 5000, roun
 DOSE_GIVEN = { bernoulli = 0.95 }
 
 [program.CHILD.attributes]
-GIVEN_NAME = { words = { n = 2_000, s = 1.1, vocabulary = "given" } }
+GIVEN_NAME = { words = { n = 20_000, s = 1.4, q = 25, vocabulary = "given" } }
 DATE_OF_BIRTH = { sql = "record.date" }

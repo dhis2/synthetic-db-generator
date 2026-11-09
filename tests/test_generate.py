@@ -317,3 +317,32 @@ attributes = { FAMILY_NAME = "mother.FAMILY_NAME" }
     # pregnancy, 3 days after its last event, at its org unit, with her family name.
     assert counts["relationship"]["rows"] == children == linked > 0
     assert wrong == 0
+
+
+def test_q_of_words_spreads_the_most_common_name(tmp_path):
+    # The same n and s, and an offset for the family name only: its most common word holds far
+    # fewer people.
+    body = """
+[program.PREGNANCY]
+tracked_entities = 1000
+
+[program.PREGNANCY.attributes]
+GIVEN_NAME = { words = { n = 10_000, s = 1.5 } }
+FAMILY_NAME = { words = { n = 10_000, s = 1.5, q = 50 } }
+"""
+    build = Build(spec=write_spec(tmp_path, body), root=tmp_path)
+    sample(build)
+    con = duckdb.connect()
+    con.execute(f"set file_search_path = '{build.stage_dir('generate')}'")
+    top = dict(
+        con.execute(
+            """
+            select trackedentityattribute_uid, max(people) / sum(people)
+            from (select trackedentityattribute_uid, value, count(*) as people
+                  from 'trackedentityattributevalue.parquet' group by all)
+            group by all
+            """
+        ).fetchall()
+    )
+    assert top["GivenName01"] > 0.2
+    assert top["FamilyName1"] < 0.05
