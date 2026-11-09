@@ -334,7 +334,8 @@ def empty_inputs(con: duckdb.DuckDBPyConnection) -> None:
         create or replace table orgunit (
             uid varchar, code varchar, name varchar, level integer, level_name varchar,
             parent_code varchar, parent_uid varchar, path varchar, type varchar,
-            clerks integer, traits varchar, kept boolean
+            clerks integer, traits varchar, imported_to_dhis2 boolean,
+            draws_records_and_users boolean
         )
         """
     )
@@ -526,7 +527,8 @@ class Program:
         return [
             f"""-- program.{self.key}.orgunit_level
 create or replace table place_{self.k} as
-select o.uid as orgunit_uid, o.code as orgunit_code, o.kept, {", ".join(columns)},
+select o.uid as orgunit_uid, o.code as orgunit_code, o.draws_records_and_users,
+       {", ".join(columns)},
        o.uid as "orgunit.uid", o.code as "orgunit.code"
 from orgunit o
 {chr(10).join(joins)}
@@ -578,9 +580,10 @@ create or replace table te_{self.k} as
 with counted as (
     -- The mean of every place, of the area or not, so a total is shared among all of its places;
     -- then the area's only.
-    select * exclude (mean, kept), rand_poisson(orgunit_code, {quote(label)}, mean) as n
+    select * exclude (mean, draws_records_and_users),
+           rand_poisson(orgunit_code, {quote(label)}, mean) as n
     from ({self.mean_tracked_entities()})
-    where kept
+    where draws_records_and_users
 ),
 numbered as (
     select * exclude (n), unnest(range(n)) as i from counted
@@ -634,12 +637,12 @@ create or replace table te_{self.k} as
 select * from te_{self.k}
 union all by name
 select * from (
-    select p.* exclude (kept), hash('{self.p["uid"]}', m.en_key) as te_key,
+    select p.* exclude (draws_records_and_users), hash('{self.p["uid"]}', m.en_key) as te_key,
            0::bigint as "tracked_entity.number", m.te_key as source_te_key,
            m.en_key as source_en_key, {", ".join(self.source_columns())}
     from enr_{source} m
     join place_{self.k} p using (orgunit_uid)
-    where p.kept
+    where p.draws_records_and_users
 )
 where rand_u(source_en_key, {quote(label + ".share")}) < {f["share"]!r} and ({where})"""
 

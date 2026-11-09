@@ -2,9 +2,10 @@
 
 Three kinds of user:
 
-* clerks: of every org unit a program registers at (its orgunit_level), as many as the org unit's
-  type has (the level's types), else users.clerks. A clerk captures at the org unit, searches and
-  views the org unit of users.search_level above it, and creates its records (generate).
+* clerks: of every org unit of the area a program registers at (its orgunit_level), as many as
+  the org unit's type has (the level's types), else users.clerks. A clerk captures at the org
+  unit, searches and views the org unit of users.search_level above it, and creates its records
+  (generate).
 * officers: one per org unit of the levels of users.officers that holds an org unit of the area,
   view only.
 * an admin, with the ALL authority, at the root.
@@ -93,28 +94,30 @@ def build_users(build: Build, effective: dict) -> list[dict]:
     search_level = levels.index(spec["search_level"]) + 1
     officer_levels = [levels.index(name) + 1 for name in spec["officers"]]
     con = duckdb.connect()
-    con.execute("create table ou as select * from read_parquet(?) where kept", [str(orgunits)])
+    con.execute(
+        "create table ou as select * from read_parquet(?) where imported_to_dhis2", [str(orgunits)]
+    )
     [(root,)] = con.execute("select uid from ou where level = 1").fetchall()
     # A path is the codes from the root to the org unit, the n-th of level n. The joins match a
     # code: one on whether a path holds it compares every org unit with every other.
-    # Each org unit of a capture level, with its ancestor of the search level.
+    # Each org unit of a capture level in the area, with its ancestor of the search level.
     clerks_at = con.execute(
         f"""
         select o.uid, o.code, coalesce(o.clerks, {int(spec["clerks"])}),
                coalesce(s.uid, o.uid)
         from ou o
         left join ou s on s.code = split_part(o.path, '/', {search_level})
-        where o.level in (select unnest(?))
+        where o.level in (select unnest(?)) and o.draws_records_and_users
         order by o.code
         """,
         [capture_levels],
     ).fetchall()
-    # Every org unit of an officer level above a capture org unit.
+    # Every org unit of an officer level above a capture org unit of the area.
     officers_at = con.execute(
         """
         select distinct a.uid, a.code, a.level_name
         from (select unnest(string_split(path, '/')) as code from ou
-              where level in (select unnest(?))) o
+              where level in (select unnest(?)) and draws_records_and_users) o
         join ou a on a.code = o.code
         where a.level in (select unnest(?))
         order by a.level_name, a.code

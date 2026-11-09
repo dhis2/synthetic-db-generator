@@ -287,7 +287,8 @@ def assign_programs(build: Build, effective: dict, cur: psycopg.Cursor) -> None:
         uids = [
             u
             for (u,) in duckdb.execute(
-                "select uid from read_parquet(?) where kept and level_name = ? order by uid",
+                "select uid from read_parquet(?) where imported_to_dhis2 and level_name = ? "
+                "order by uid",
                 [str(orgunits), p["orgunit_level"]],
             ).fetchall()
         ]

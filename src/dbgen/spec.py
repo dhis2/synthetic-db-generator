@@ -1094,7 +1094,7 @@ def valid_values(pairs: set[tuple[str, str]]) -> set[tuple[str, str]]:
     checks of generate judge it: by valid_value of sql/values.sql."""
     con = duckdb.connect()
     # valid_value reads the build's org units and users, which no value checked is.
-    con.execute("create table orgunit (uid varchar, kept boolean)")
+    con.execute("create table orgunit (uid varchar, imported_to_dhis2 boolean)")
     con.execute("create table user_ref (username varchar)")
     for statement in sqlfile.script(sqlfile.SQL / "values.sql"):
         con.execute(statement)
