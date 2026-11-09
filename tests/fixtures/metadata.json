@@ -448,6 +448,7 @@
       },
       "sortOrder": 2,
       "repeatable": true,
+      "enableUserAssignment": true,
       "programStageDataElements": [
         {
           "dataElement": {

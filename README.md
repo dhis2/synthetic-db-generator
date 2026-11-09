@@ -174,7 +174,6 @@ GIVEN_NAME = { words = { n = 20_000, s = 1.4, q = 25, vocabulary = "given" } }
 [records]
 deleted = 0.01
 followup = 0.03
-assigned = 0.05
 updated = { share = 0.1, after = { exponential = 30 } }
 
 [load]
@@ -191,7 +190,9 @@ order = "created" # rows in the order a live instance inserts them
 * `enrollments`: how many a tracked entity has (`count`), the `gap` between them, their `status`.
 * `visits`: how many an enrollment has, the `spacing` between them, their statuses, and their
   `stages`.
-* `stage."<name>"`: the events of a stage outside the visits, when, and their statuses.
+* `stage."<name>"`: the events of a stage outside the visits, when, and their statuses. Of any
+  stage, the share of its events `assigned` to their clerk, if its metadata enables user
+  assignment; none by default. A stage of the visits takes only `status` and `assigned`.
 * `values`: how to draw an event's data values, by data element, its code, UID or name, written
   only `if` its condition holds and at the share its `fill` gives, such as
   `{ constant = true, if = "event.number = 1", fill = 0.95 }`. A data element left out stays
@@ -199,8 +200,8 @@ order = "created" # rows in the order a live instance inserts them
 * `attributes`: the same for a tracked entity's attributes, drawn once, at its registration.
 * `[users]`: the `clerks` per org unit, the levels of view-only `officers`, the `search_level`,
   and the users' `prefix` and `password`.
-* `[records]`: the shares of records deleted, followed up, assigned or updated after their
-  creation, and the `entry_delay` in days from an event to its entry.
+* `[records]`: the shares of records deleted, followed up or updated after their creation, and
+  the `entry_delay` in days from an event to its entry.
 * `[load]`: the `order` of the rows, `created` as a live instance inserts them, the default, or
   `parallel`, which loads faster and interleaves them on disk.
 

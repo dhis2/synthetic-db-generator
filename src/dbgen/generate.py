@@ -159,7 +159,9 @@ COLUMNS = {
         "createdby_uid": USER.format("created it", "createdbyuserinfo"),
         "lastupdatedby_uid": USER.format("created it", "lastupdatedbyuserinfo"),
         "lastsynchronized": "Always 1970-01-01, never synchronized",
-        "assigneduser_uid": "UID of the clerk it is assigned to ([records].assigned), or null",
+        "assigneduser_uid": (
+            "UID of the clerk it is assigned to, at its stage's share (assigned), or null"
+        ),
     },
     "relationship": {
         "relationshipid": "Internal ID, in the order of creation",
@@ -1236,6 +1238,14 @@ def lifecycle(effective: dict) -> list[str]:
     entry_delay = distribution.Compiler("ev_key").compile(
         records["entry_delay"], "records.entry_delay"
     )
+    # The share of each stage's events assigned to their clerk (the stage's assigned).
+    shares = [
+        f"when {quote(s['uid'])} then {s['assigned']!r}"
+        for p in effective["programs"]
+        for s in p["stages"]
+        if s["assigned"] > 0
+    ]
+    assigned = f"case ev.stage {' '.join(shares)} else 0 end" if shares else "0"
     ev_parts, en_parts, te_parts, att_parts, rel_parts = [], [], [], [], []
     for prog in programs:
         k = prog.k
@@ -1366,8 +1376,8 @@ select ev.ev_key, ev.en_key, ev.program, ev.stage, ev.orgunit,
            as lastupdated,
        case when ev.status = 'COMPLETED' then ev.created end as completed,
        ev.clerk,
-       case when rand_u(ev.ev_key, 'records.assigned') < {float(records["assigned"])!r}
-            then ev.clerk end as assigned,
+       case when rand_u(ev.ev_key, 'stage.assigned') < {assigned} then ev.clerk end
+           as assigned,
        ev.aoc, coalesce(t.deleted, false) as deleted,
        coalesce(ev.datavalues, []) as datavalues
 from timed_event ev

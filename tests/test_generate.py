@@ -206,6 +206,31 @@ tracked_entities = 20
     assert clerks == [own]
 
 
+def test_a_stage_assigns_the_share_of_its_events_it_gives(tmp_path):
+    body = """
+[program.PREGNANCY]
+tracked_entities = 20
+
+[program.PREGNANCY.visits]
+stages = ["Check", "Lab"]
+
+[program.PREGNANCY.stage.Check]
+assigned = 1
+"""
+    build = Build(spec=write_spec(tmp_path, body), root=tmp_path)
+    sample(build)
+    rows = dict(
+        duckdb.connect()
+        .execute(
+            "select programstage_uid, count(assigneduser_uid) > 0 "
+            f"from '{build.stage_dir('generate')}/event.parquet' group by all"
+        )
+        .fetchall()
+    )
+    assert rows["PregCheck01"]
+    assert [stage for stage, assigned in rows.items() if assigned] == ["PregCheck01"]
+
+
 def test_a_value_may_name_another_value_of_its_event(tmp_path):
     body = """
 [program.PREGNANCY]
