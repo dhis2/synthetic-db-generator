@@ -551,6 +551,9 @@ def test_a_pattern_of_a_segment_dbgen_does_not_draw_fails(tmp_path, pattern, seg
         (lambda t: t.replace("start = 2023-01-01", "start = 2023-01-01T08:00:00"), "date and time"),
         (lambda t: t + "\n[program.PREGNANCY.values]\nNOTES = { words = { count = 0 } }", "words"),
         (lambda t: t + '\n[program.PREGNANCY.values]\nNOTES = { words = { n = "many" } }', "words"),
+        (lambda t: t + "\n[program.PREGNANCY.values]\nNOTES = { words = { q = -1 } }", "words: q"),
+        (lambda t: t + "\n[program.PREGNANCY.values]\nNOTES = { words = { q = nan } }", "words: q"),
+        (lambda t: t + "\n[program.PREGNANCY.values]\nNOTES = { words = { s = inf } }", "words: s"),
         (lambda t: t.replace("per_parent = 2", 'per_parent = 2\nclerks = "x"'), "clerks: must be"),
         (
             lambda t: t.split("[[orgunits.level]]")[0] + "level = [1]",
