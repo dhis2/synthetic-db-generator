@@ -13,31 +13,16 @@ replaces the table layout in a dbgen release, as dbgen never writes two.
 
 In order:
 
-* Once the pipeline decides the runner and the sizes, fit the build to them. What pays depends on
-  the runner's cores and memory: on 4 vCPUs more streams or threads gain nothing, on 16 cores they
-  are the main gain.
-  * DuckDB's threads and memory, of `generate` and `load`, set from the `DBGEN_` caps or from the
-    machine, as the stack's caps are. `load` splits a table into streams only for `[load] order =
-    "parallel"`; `created`, as MNCH loads, takes one stream, so measure what that costs on a
-    region first.
-  * Dump the events in key ranges, for a region and larger. Nearly all of `dump` is `pg_dump`'s
-    one `COPY` of `trackerevent`, printing the `jsonb`, and `pg_dump` sends a table through one
-    connection, with `-Fd --jobs` too. On an earlier generator's builds, `dump` took 43 s for a
-    district and 20 minutes for 49M events, and four `COPY`s of `trackerevent` by `eventid` range
-    took a third of the time of one. Assemble the plain SQL the harness restores from `pg_dump
-    --section=pre-data`, the other tables' data, the ranges in one `COPY ... FROM stdin` block and
-    `--section=post-data`, each its own gzip member: `gunzip -c` reads concatenated members as one
-    stream. The `docker compose exec` pipe costs too: one pipe per range spreads it over cores.
-  * Overlap stages where cores and memory are to spare: `build` runs them in turn, but
-    `bootstrap` and `generate` do not depend on each other, and `dump` could run beside `verify`.
-    Take the dump's snapshot before DHIS2 starts, keep the dump only if `verify` passes, and test
-    first that DHIS2's startup takes no lock that waits for `pg_dump`, which holds `access share`
-    on every table until it ends.
-  * For the largest sizes, drop the unique constraints of the loaded tables during `load` too,
-    such as `unique_trackerevent_uid`. `load` drops only the indexes no constraint owns, so every
-    event inserts its UID, random to its id, into a B-tree of several GB. Adding the constraint
-    back builds the index in one sort and checks uniqueness all the same.
-  * Pull the images while `uv sync` runs.
+* Fit MNCH's records to ANC's and EIR's program rules. verify's importer validation of a QP1613
+  sample gives 6,905 warnings in ANC and 162 in EIR, no errors: values a rule assigns, such as the
+  weight category, parity or the quick check's date, differ from what it computes (E1308), values
+  its checks flag (E1300), and E1120. Nothing fails, but imports and Capture run the rules, as the
+  import stream will: find which rules matter, and draw their fields as the rules compute them,
+  in the MNCH spec of synthetic-databases or with what dbgen lacks for it.
+* verify waits about 16 s for its trigram job: DHIS2's scheduler starts about 16 s after DHIS2 is
+  healthy, and the job then takes milliseconds. Skip the job when no attribute is trigram
+  indexable, as in the example, about a tenth of CI's build; otherwise submit it first and wait
+  for it after the importer validation and the smoke queries.
 * The import stream, once dumps are published. TrackerTest imports Synthea's women and children,
   whole histories without UIDs, as admin, in a loop: nothing continues the database, while in a
   live instance most writes do.
@@ -58,9 +43,27 @@ In order:
     dataset release.
   * imports by duration need data that never ends: new registrations without UIDs, nested as
     Synthea's, looped, in place of the Synthea files
-* Before the pipeline's first release, check that the planner misestimates the tracker queries on
-  a build as on a real instance (their q-errors). The `stats` stage, the collector and `dbgen
-  report` did, on the branch `backup/planner-report` of `teleivo/dhis2-db-generator`.
+
+## Later
+
+* If a release grows past a district (the pipeline builds district QP1613 on a standard runner,
+  4 CPUs and 16 GB):
+  * drop the unique constraints of the loaded tables during `load` too, such as
+    `unique_trackerevent_uid`. `load` drops only the indexes no constraint owns, so every event
+    inserts its UID, random to its id, into a B-tree; `copy event` is 114 s of QP1613's 158 s of
+    `load`. Adding the constraint back builds the index in one sort and checks uniqueness all the
+    same.
+  * dump the events in key ranges. Nearly all of `dump` is `pg_dump`'s one `COPY` of
+    `trackerevent`, through one connection, with `-Fd --jobs` too: 56 s for QP1613, 20 minutes
+    for 49M events on an earlier generator, where four `COPY`s by `eventid` range took a third of
+    the time of one. Assemble the plain SQL from `pg_dump --section=pre-data`, the other tables'
+    data, the ranges in one `COPY ... FROM stdin` block and `--section=post-data`, each its own
+    gzip member, which `gunzip -c` reads as one stream.
+* Compare the planner's misestimates of the tracker queries on a build with those on a real
+  instance (their q-errors), when an implementation's numbers are at hand, never as a step of a
+  release: an implementation answers in weeks, and a perf database is published without it. The
+  `stats` stage, the collector and `dbgen report` did, on the branch `backup/planner-report` of
+  `teleivo/dhis2-db-generator`.
 
 ## Ideas
 
