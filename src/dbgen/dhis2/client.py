@@ -45,17 +45,19 @@ SERVICES = ("db", "web", "web-healthcheck")
 
 
 @contextmanager
-def running(services: tuple[str, ...] = SERVICES, timeout: int = 900) -> Generator[None]:
+def running(
+    project: str, services: tuple[str, ...] = SERVICES, timeout: int = 900
+) -> Generator[None]:
     """Start services for the block and stop the stack after it, also when they fail to start:
     `compose up --wait` leaves the services that did start running."""
     try:
-        start(services, timeout)
+        start(project, services, timeout)
         yield
     finally:
-        stop()
+        stop(project)
 
 
-def start(services: tuple[str, ...] = SERVICES, timeout: int = 900) -> None:
+def start(project: str, services: tuple[str, ...] = SERVICES, timeout: int = 900) -> None:
     """Start services, refusing when the machine lacks memory or disk for them.
 
     Returns once every service is healthy: DHIS2 once it answers /api/ping (web-healthcheck),
@@ -77,31 +79,33 @@ def start(services: tuple[str, ...] = SERVICES, timeout: int = 900) -> None:
             f"only {disk:.1f} GiB free where Docker keeps its data, the build database needs "
             f"{REQUIRED_DISK_GIB} GiB. Free some (docker system df shows what uses it)."
         )
-    compose("up", "--detach", "--wait", "--wait-timeout", str(timeout), *services)
+    compose(project, "up", "--detach", "--wait", "--wait-timeout", str(timeout), *services)
 
 
-def stop(services: tuple[str, ...] = ()) -> None:
+def stop(project: str, services: tuple[str, ...] = ()) -> None:
     """Stop services, every one of the stack by default; data stays in the pgdata volume."""
-    compose("stop", *services)
+    compose(project, "stop", *services)
 
 
-def reset() -> None:
+def reset(project: str) -> None:
     """Remove the build database. Only touches this project's containers and volume."""
-    compose("down", "--volumes", "--remove-orphans")
+    compose(project, "down", "--volumes", "--remove-orphans")
 
 
-def compose(*args: str) -> None:
-    command, env = compose_command(*args)
-    print(f"compose: {' '.join(args)}", file=sys.stderr)
+def compose(project: str, *args: str) -> None:
+    command, env = compose_command(project, *args)
+    print(f"compose {project}: {' '.join(args)}", file=sys.stderr)
     _docker(f"docker compose {' '.join(args)}", command, env)
 
 
-def compose_command(*args: str) -> tuple[list[str], dict[str, str]]:
-    """The docker compose command line and environment, with the pinned images, <NAME>_IMAGE
-    for each image of lock.toml such as DHIS2_IMAGE, and the caps."""
+def compose_command(project: str, *args: str) -> tuple[list[str], dict[str, str]]:
+    """The docker compose command line of the project (Build.project) and its environment, with
+    the pinned images, <NAME>_IMAGE for each image of lock.toml such as DHIS2_IMAGE, and the
+    caps."""
     images = {f"{name.upper()}_IMAGE": image for name, image in lock.images().items()}
     env = {**os.environ, **images, **caps()}
-    return ["docker", "compose", "--file", str(COMPOSE_FILE), *args], env
+    command = ["docker", "compose", "--file", str(COMPOSE_FILE), "--project-name", project]
+    return [*command, *args], env
 
 
 def caps() -> dict[str, str]:

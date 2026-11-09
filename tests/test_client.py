@@ -31,3 +31,8 @@ def test_caps_fail_on_a_value_compose_or_the_jvm_cannot_take(monkeypatch, name, 
     monkeypatch.setenv(name, value)
     with pytest.raises(UsageError, match=error):
         client.caps()
+
+
+def test_compose_command_names_the_project():
+    command, _ = client.compose_command("dbgen-checkout-3f9a1c", "stop")
+    assert command[-3:] == ["--project-name", "dbgen-checkout-3f9a1c", "stop"]

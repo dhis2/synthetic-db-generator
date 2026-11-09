@@ -44,7 +44,7 @@ def run(build: Build) -> Path:
     # written leaves no manifest rather than one that does not match the dump.
     manifest_file.unlink(missing_ok=True)
     with timing.timed(build.dir, "dump") as t:
-        with client.running(("db",), timeout=300):
+        with client.running(build.project, ("db",), timeout=300):
             with client.connect(autocommit=True) as pg, pg.cursor() as cur:
                 provenance.check_database(cur, provenance.bootstrap_run(parent_stages["load"]))
                 check_row_counts(cur, checksums)
@@ -52,7 +52,7 @@ def run(build: Build) -> Path:
                     "select version from flyway_schema_history order by installed_rank desc limit 1"
                 )
                 [(flyway,)] = cur.fetchall()
-            sha256 = write_dump(target)
+            sha256 = write_dump(build.project, target)
         size = target.stat().st_size
         t.add(bytes_out=size)
 
@@ -112,12 +112,20 @@ def check_row_counts(cur, expected: dict[str, dict]) -> None:
         )
 
 
-def write_dump(target: Path) -> str:
+def write_dump(project: str, target: Path) -> str:
     """Stream pg_dump from the db container into a gzip file; return its sha256."""
     target.parent.mkdir(parents=True, exist_ok=True)
     partial = target.with_name(target.name + ".part")
     command, env = client.compose_command(
-        "exec", "-T", "db", "pg_dump", "--no-owner", "--no-privileges", "--username=dhis", "dhis"
+        project,
+        "exec",
+        "-T",
+        "db",
+        "pg_dump",
+        "--no-owner",
+        "--no-privileges",
+        "--username=dhis",
+        "dhis",
     )
     with subprocess.Popen(command, stdout=subprocess.PIPE, env=env) as proc:
         stdout = proc.stdout

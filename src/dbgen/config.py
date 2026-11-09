@@ -12,6 +12,7 @@ output/                       what builds write, under the build's root (the wor
 └── <build>/                  dump: the SQL dump and its manifest
 """
 
+import hashlib
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -117,6 +118,16 @@ class Build:
         directory = self.stage_dir(stage)
         directory.mkdir(parents=True, exist_ok=True)
         return directory
+
+    @property
+    def project(self) -> str:
+        """The compose project of the build database, one per root, such as
+        dbgen-synthetic-db-generator-3f9a1c: builds of two checkouts never share its containers or
+        volume. The hash of the root keeps apart two that share a directory name."""
+        root = self.root.resolve()
+        name = re.sub(r"[^a-z0-9]+", "-", root.name.lower()).strip("-")
+        digest = hashlib.sha256(str(root).encode()).hexdigest()[:6]
+        return "-".join(part for part in ("dbgen", name, digest) if part)
 
     @property
     def output(self) -> Path:

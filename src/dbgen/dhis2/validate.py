@@ -41,10 +41,11 @@ def run(build: Build) -> dict:
 
     for stage in STAGES:
         current, _ = compile_stage.compile_build(build)
-        # The build database is one for every build: bootstrap is current only while it holds
-        # this build's bootstrap.
+        # The build database is one for every build of a root: bootstrap is current only while it
+        # holds this build's bootstrap.
         if provenance.fresh(build, stage, current) and (
-            stage != "bootstrap" or _holds(provenance.load(build)["bootstrap"]["run"])
+            stage != "bootstrap"
+            or _holds(build.project, provenance.load(build)["bootstrap"]["run"])
         ):
             # fresh compares the spec and the stages read, not the code they ran from.
             change = provenance.code_change(provenance.load(build)[stage], provenance.code())
@@ -62,7 +63,7 @@ def run(build: Build) -> dict:
     with timing.timed(build.dir, "validate"):
         skip = importer.unvalidated(effective)
         payloads = [importer.without(p, skip) for p in _payloads(build, effective)]
-        with client.running():
+        with client.running(build.project):
             with client.connect(autocommit=True) as pg, pg.cursor() as cur:
                 provenance.check_database(cur, parents["bootstrap"]["run"])
                 cur.execute("select exists (select from trackedentity)")
@@ -109,9 +110,9 @@ def run(build: Build) -> dict:
     return result
 
 
-def _holds(run: str) -> bool:
+def _holds(project: str, run: str) -> bool:
     """Whether the build database holds the bootstrap of run."""
-    with client.running(("db",), timeout=300):
+    with client.running(project, ("db",), timeout=300):
         with client.connect(autocommit=True) as pg, pg.cursor() as cur:
             try:
                 provenance.check_database(cur, run)

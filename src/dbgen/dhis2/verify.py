@@ -53,12 +53,12 @@ def run(build: Build) -> dict:
         a["id"] for a in metadata.of("trackedEntityAttributes") if a.get("trigramIndexable")
     }
     with timing.timed(build.dir, "verify"):
-        with client.running(("db",), timeout=300):
+        with client.running(build.project, ("db",), timeout=300):
             with client.connect(autocommit=True) as pg, pg.cursor() as cur:
                 provenance.check_database(cur, provenance.bootstrap_run(parents["load"]))
                 checks, check_seconds = postload_checks(cur)
                 samples = {p["uid"]: _sample(cur, p["uid"]) for p in effective["programs"]}
-            client.start(("web", "web-healthcheck"))
+            client.start(build.project, ("web", "web-healthcheck"))
             with client.api() as api, client.connect(autocommit=True) as pg, pg.cursor() as cur:
                 trigram = trigram_indexes(api, cur, trigram_attributes)
                 known = importer.names(cur)

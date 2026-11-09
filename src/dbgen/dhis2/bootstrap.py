@@ -176,9 +176,9 @@ def run(build: Build) -> None:
         orgunits = json.loads((build.stage_dir("orgunits") / "orgunits.json").read_text())
         users = json.loads((build.stage_dir("users") / "users.json").read_text())
         api_users, copies = user_copies.split(build, users)
-        with client.running():
+        with client.running(build.project):
             _import(build, effective, orgunits, api_users)
-            client.stop(("web", "web-healthcheck"))
+            client.stop(build.project, ("web", "web-healthcheck"))
             # One transaction, committed when the connection closes.
             with client.connect() as pg, pg.cursor() as cur:
                 user_copies.copy(cur, copies)

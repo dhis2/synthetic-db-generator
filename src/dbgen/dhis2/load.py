@@ -120,8 +120,8 @@ def run(build: Build, replace: bool = False) -> None:
     steps: dict[str, float] = {}
     with timing.timed(build.dir, "load") as t:
         # A DHIS2 started by hand would cache what the load replaces, and `up db` leaves it running.
-        client.stop(("web", "web-healthcheck"))
-        with client.running(("db",), timeout=300):
+        client.stop(build.project, ("web", "web-healthcheck"))
+        with client.running(build.project, ("db",), timeout=300):
             with client.connect(autocommit=True) as pg, pg.cursor() as cur:
                 bootstrap_run = parent_stages["bootstrap"]["run"]
                 provenance.check_database(cur, bootstrap_run)

@@ -324,10 +324,11 @@ past. The spec fills such a field as a live instance holds it, and lists it in i
 * 17 GiB of free memory: 4 GiB for Postgres, 5 GiB for DHIS2, and 8 GiB for DuckDB and the rest
   of the machine. DHIS2 and Postgres refuse to start without it. A smaller machine lowers the
   caps (see [Caps](#caps)).
-* disk: about 1.5 GiB per million events in the build database, Docker's volume `dbgen_pgdata`,
-  with up to 4 GiB of WAL besides, and 0.25 GiB in the dump: MNCH's district QP1613, 2.2 million
-  events, takes 6.4 GiB and 0.5 GiB. DHIS2 and Postgres refuse to start without 10 GiB free, and
-  `load` without 8 GiB and 1.5 GiB per million events.
+* disk: about 1.5 GiB per million events in the build database, the Docker volume
+  `dbgen-<checkout>-<hash>_pgdata` of each checkout, with up to 4 GiB of WAL besides, and 0.25 GiB
+  in the dump: MNCH's district QP1613, 2.2 million events, takes 6.4 GiB and 0.5 GiB. DHIS2 and
+  Postgres refuse to start without 10 GiB free, and `load` without 8 GiB and 1.5 GiB per million
+  events.
 
 ### Build
 
@@ -337,8 +338,9 @@ uv run dbgen build examples/pregnancy/pregnancy.toml --orgunit EX0201
 
 This builds district EX0201 of [the example](#the-example), 518 tracked entities and 4,055 events,
 in about 2 minutes into `output/pregnancy-EX0201/`, a dump of half a MiB. The first build also
-pulls the Docker images pinned in `src/dbgen/lock.toml`. Every build empties the one build
-database first, so run one at a time. The dumps in `output/` stay.
+pulls the Docker images pinned in `src/dbgen/lock.toml`. Every build empties the build database
+of its checkout first, so run one at a time. Two checkouts have a database each, but share its
+ports, so a build fails to start while another runs. The dumps in `output/` stay.
 
 ### Choose the area
 
