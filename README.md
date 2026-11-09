@@ -139,6 +139,7 @@ tracked_entities = { total = "district.people * 0.125", among = "District", by =
 count = { poisson = 0.26, plus = 1 } # one pregnancy, and maybe more, one after another
 gap = { uniform = [182, 546] } # from the last event to the next first contact
 status = { COMPLETED = 0.6, ACTIVE = 0.4 } # of a woman's last pregnancy that ended
+followup = 0.03
 
 [program.RMNCAH_ANC.trait.enrollment]
 # ...
@@ -173,7 +174,6 @@ GIVEN_NAME = { words = { n = 20_000, s = 1.4, q = 25, vocabulary = "given" } }
 
 [records]
 deleted = 0.01
-followup = 0.03
 updated = { share = 0.1, after = { exponential = 30 } }
 
 [load]
@@ -187,7 +187,8 @@ order = "created" # rows in the order a live instance inserts them
   `orgunit_level` it registers at, the lowest by default, and how many tracked entities register
   at each org unit of it (`per_orgunit`, or a `total` shared `among` the org units of a level `by`
   a weight).
-* `enrollments`: how many a tracked entity has (`count`), the `gap` between them, their `status`.
+* `enrollments`: how many a tracked entity has (`count`), the `gap` between them, their `status`,
+  and the share marked for `followup`, none by default.
 * `visits`: how many an enrollment has, the `spacing` between them, their statuses, and their
   `stages`.
 * `stage."<name>"`: the events of a stage outside the visits, when, and their statuses. Of any
@@ -200,8 +201,8 @@ order = "created" # rows in the order a live instance inserts them
 * `attributes`: the same for a tracked entity's attributes, drawn once, at its registration.
 * `[users]`: the `clerks` per org unit, the levels of view-only `officers`, the `search_level`,
   and the users' `prefix` and `password`.
-* `[records]`: the shares of records deleted, followed up or updated after their creation, and
-  the `entry_delay` in days from an event to its entry.
+* `[records]`: the shares of records deleted or updated after their creation, and the
+  `entry_delay` in days from an event to its entry.
 * `[load]`: the `order` of the rows, `created` as a live instance inserts them, the default, or
   `parallel`, which loads faster and interleaves them on disk.
 

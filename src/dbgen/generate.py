@@ -31,7 +31,7 @@ eventdatavalues. A program's records, in the order generate draws them:
 9. times and users: an event is created in working hours on its day by a clerk of its org unit,
    an enrollment 5 minutes before its first event, a tracked entity a minute before its first
    enrollment, a relationship of a linked tracked entity minutes after the later of its two;
-   updates, deletions and follow-ups at the shares of [records]
+   updates and deletions at the shares of [records], follow-ups at each program's
 10. the tables (sql/tables.sql): ids by creation time, tracker UIDs from them, and the rows
     updated after their creation, which load updates in that order
 11. the pre-load checks (sql/checks/preload.sql) against the metadata files' tables, which
@@ -118,7 +118,7 @@ COLUMNS = {
         "occurreddate": "Its enrollment date",
         "enrollmentdate": "Day of its first event",
         "completeddate": "When it was completed, null unless COMPLETED",
-        "followup": "Whether it is marked for follow-up ([records].followup)",
+        "followup": "Whether it is marked for follow-up, at its program's share (followup)",
         "completedby": "Username of the clerk who completed it",
         "deleted": "Whether it is soft deleted, as its tracked entity",
         "status": "ACTIVE, COMPLETED or CANCELLED",
@@ -1246,6 +1246,13 @@ def lifecycle(effective: dict) -> list[str]:
         if s["assigned"] > 0
     ]
     assigned = f"case ev.stage {' '.join(shares)} else 0 end" if shares else "0"
+    # The share of each program's enrollments followed up (its enrollments' followup).
+    shares = [
+        f"when {quote(p['uid'])} then {p['followup']!r}"
+        for p in effective["programs"]
+        if p["followup"] > 0
+    ]
+    followup = f"case e.program {' '.join(shares)} else 0 end" if shares else "0"
     ev_parts, en_parts, te_parts, att_parts, rel_parts = [], [], [], [], []
     for prog in programs:
         k = prog.k
@@ -1392,7 +1399,7 @@ select e.en_key, e.te_key, e.program, e.orgunit, e.number, of_days(e.start_day) 
                 coalesce((select max(lastupdated) from out_event o where o.en_key = e.en_key),
                          e.created)) as lastupdated,
        e.completed, e.clerk, e.completed_by,
-       rand_u(e.en_key, 'records.followup') < {float(records["followup"])!r} as followup,
+       rand_u(e.en_key, 'enrollments.followup') < {followup} as followup,
        t.deleted
 from timed_enrollment e
 join timed_te t using (te_key)

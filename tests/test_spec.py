@@ -593,3 +593,15 @@ def test_a_stage_assigns_events_only_if_its_metadata_enables_user_assignment(tmp
 def test_records_take_no_assigned(tmp_path):
     with pytest.raises(UsageError, match=re.escape("records.assigned: set it on the stage")):
         effective(tmp_path, "[records]\nassigned = 0.05")
+
+
+def test_enrollments_take_the_share_of_them_followed_up(tmp_path):
+    eff = effective(tmp_path, "[program.PREGNANCY.enrollments]\nfollowup = 0.03")
+    assert {p["key"]: p["followup"] for p in eff["programs"]} == {"PREGNANCY": 0.03, "CHILD": 0.0}
+    with pytest.raises(UsageError, match=re.escape("enrollments.followup: must be a share")):
+        effective(tmp_path, "[program.PREGNANCY.enrollments]\nfollowup = 3")
+
+
+def test_records_take_no_followup(tmp_path):
+    with pytest.raises(UsageError, match=re.escape("records.followup: set it on the enrollments")):
+        effective(tmp_path, "[records]\nfollowup = 0.03")
