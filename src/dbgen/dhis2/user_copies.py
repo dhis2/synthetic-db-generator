@@ -184,8 +184,9 @@ def _insert(cur: psycopg.Cursor, copies: list[tuple], links: dict[str, str]) -> 
         "order by c.username",
     )
     # Autovacuum is off in the build and never analyzes a temporary table, so the planner would
-    # take userinfo for the few users DHIS2 created, and join the copies to it in a nested loop,
-    # quadratic in the users. ANALYZE counts the rows of its own transaction.
+    # take userinfo for the few rows it held before the copies, the templates and DHIS2's admin,
+    # and join the copies to it in a nested loop, quadratic in the users. ANALYZE counts the rows
+    # of its own transaction.
     _execute(cur, "analyze user_copy, userinfo")
     for table, column in ORG_UNIT_LINKS.items():
         _execute(
