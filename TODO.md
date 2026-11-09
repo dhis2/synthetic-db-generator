@@ -47,6 +47,11 @@ In order:
   release: an implementation answers in weeks, and a perf database is published without it. The
   `stats` stage, the collector and `dbgen report` did, on the branch `backup/planner-report` of
   `teleivo/dhis2-db-generator`.
+* Find out the search scope implementations give clerks, and how often they break the glass.
+  Asked around in 2026-11, nobody knew what is typical, and break the glass seems rarely used.
+  MNCH's `search_level = "District"` and EIR being PROTECTED decide what a clerk's search reads:
+  if clerks in practice search their capture scope only, the district-wide searches are heavier
+  than a live instance's.
 
 ## Ideas
 
