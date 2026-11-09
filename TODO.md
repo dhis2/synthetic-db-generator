@@ -13,10 +13,6 @@ replaces the table layout in a dbgen release, as dbgen never writes two.
 
 In order:
 
-* Assign events to users only in stages that allow it. `[records] assigned` assigns a share of
-  every stage's events to their clerk, and DHIS2 warns E1120 ("ProgramStage does not allow user
-  assignment") for a stage without `enableUserAssignment`: 275 times in verify's ANC sample of
-  QP1613, 56 in EIR's.
 * Make MNCH's values agree with ANC's and EIR's program rules. dbgen draws each value by itself,
   while a rule computes some values from others, such as the weight category from the weight.
   verify sends a sample of QP1613 back through the importer, which runs the rules, and they

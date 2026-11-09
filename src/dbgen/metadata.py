@@ -57,6 +57,9 @@ class Stage:
     name: str
     program: str
     repeatable: bool
+    # Whether its events may be assigned to a user: the importer warns E1120 on one assigned in
+    # a stage without enableUserAssignment.
+    user_assignment: bool
     sort_order: int
     standard_interval: int | None
     min_days_from_start: int
@@ -129,6 +132,7 @@ class Metadata:
                     name=_need(s, "name", "program stage", s["id"]).strip(),
                     program=p["id"],
                     repeatable=bool(s.get("repeatable", False)),
+                    user_assignment=bool(s.get("enableUserAssignment", False)),
                     sort_order=int(s.get("sortOrder") or 0),
                     standard_interval=s.get("standardInterval"),
                     min_days_from_start=int(s.get("minDaysFromStart") or 0),

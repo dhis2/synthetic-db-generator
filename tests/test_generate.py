@@ -206,6 +206,28 @@ tracked_entities = 20
     assert clerks == [own]
 
 
+def test_events_are_assigned_only_in_a_stage_that_enables_user_assignment(tmp_path):
+    body = """
+[program.PREGNANCY]
+tracked_entities = 20
+
+[records]
+assigned = 1
+"""
+    build = Build(spec=write_spec(tmp_path, body), root=tmp_path)
+    sample(build)
+    rows = dict(
+        duckdb.connect()
+        .execute(
+            "select programstage_uid, count(assigneduser_uid) > 0 "
+            f"from '{build.stage_dir('generate')}/event.parquet' group by all"
+        )
+        .fetchall()
+    )
+    assert rows["PregCheck01"]
+    assert [stage for stage, assigned in rows.items() if assigned] == ["PregCheck01"]
+
+
 def test_a_value_may_name_another_value_of_its_event(tmp_path):
     body = """
 [program.PREGNANCY]

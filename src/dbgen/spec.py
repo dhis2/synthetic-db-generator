@@ -152,7 +152,19 @@ def compile_spec(path: Path, codes: tuple[str, ...] = ()) -> tuple[dict, Metadat
         "unvalidated": {p["key"]: p.pop("unvalidated") for p in programs},
     }
     _check_linking(effective, metadata)
+    _check_assigned(effective)
     return effective, metadata
+
+
+def _check_assigned(effective: dict) -> None:
+    """Fail on assigned events when no stage takes them: generate assigns only events of the
+    stages that enable user assignment."""
+    stages = (s for p in effective["programs"] for s in p["stages"])
+    if effective["records"]["assigned"] > 0 and not any(s["user_assignment"] for s in stages):
+        raise UsageError(
+            "records.assigned: no program stage of the metadata enables user assignment "
+            "(enableUserAssignment), so no event can be assigned; leave assigned out"
+        )
 
 
 def load_toml(path: Path) -> dict:
@@ -713,6 +725,7 @@ def _stage(
         "uid": stage.uid,
         "name": stage.name,
         "repeatable": stage.repeatable,
+        "user_assignment": stage.user_assignment,
         "in_visits": in_visits,
         "status": _status(
             table.get("status"),
