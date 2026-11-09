@@ -19,10 +19,6 @@ In order:
   its checks flag (E1300), and E1120. Nothing fails, but imports and Capture run the rules, as the
   import stream will: find which rules matter, and draw their fields as the rules compute them,
   in the MNCH spec of synthetic-databases or with what dbgen lacks for it.
-* verify waits about 16 s for its trigram job: DHIS2's scheduler starts about 16 s after DHIS2 is
-  healthy, and the job then takes milliseconds. Skip the job when no attribute is trigram
-  indexable, as in the example, about a tenth of CI's build; otherwise submit it first and wait
-  for it after the importer validation and the smoke queries.
 * The import stream, once dumps are published. TrackerTest imports Synthea's women and children,
   whole histories without UIDs, as admin, in a loop: nothing continues the database, while in a
   live instance most writes do.
