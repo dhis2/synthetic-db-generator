@@ -18,9 +18,10 @@ from dbgen.config import DOCKER
 from dbgen.errors import UsageError
 
 COMPOSE_FILE = DOCKER / "compose.yaml"
-BASE_URL = "http://127.0.0.1:28080"
 ADMIN = ("admin", "district")
-PG_DSN = "host=127.0.0.1 port=25432 dbname=dhis user=dhis password=dhis"
+# The container port of each service dbgen connects to. Docker publishes each on a free host port
+# of its choice at every start, so builds of several checkouts run side by side (port).
+PORTS = {"db": 5432, "web": 8080}
 
 # The caps of the stack, which compose.yaml takes, and the memory start leaves free beside it for
 # DuckDB and the rest of the machine. An environment variable of the same name replaces a
@@ -45,17 +46,19 @@ SERVICES = ("db", "web", "web-healthcheck")
 
 
 @contextmanager
-def running(services: tuple[str, ...] = SERVICES, timeout: int = 900) -> Generator[None]:
+def running(
+    project: str, services: tuple[str, ...] = SERVICES, timeout: int = 900
+) -> Generator[None]:
     """Start services for the block and stop the stack after it, also when they fail to start:
     `compose up --wait` leaves the services that did start running."""
     try:
-        start(services, timeout)
+        start(project, services, timeout)
         yield
     finally:
-        stop()
+        stop(project)
 
 
-def start(services: tuple[str, ...] = SERVICES, timeout: int = 900) -> None:
+def start(project: str, services: tuple[str, ...] = SERVICES, timeout: int = 900) -> None:
     """Start services, refusing when the machine lacks memory or disk for them.
 
     Returns once every service is healthy: DHIS2 once it answers /api/ping (web-healthcheck),
@@ -77,31 +80,35 @@ def start(services: tuple[str, ...] = SERVICES, timeout: int = 900) -> None:
             f"only {disk:.1f} GiB free where Docker keeps its data, the build database needs "
             f"{REQUIRED_DISK_GIB} GiB. Free some (docker system df shows what uses it)."
         )
-    compose("up", "--detach", "--wait", "--wait-timeout", str(timeout), *services)
+    compose(project, "up", "--detach", "--wait", "--wait-timeout", str(timeout), *services)
+    published = [f"{s} at 127.0.0.1:{port(project, s)}" for s in services if s in PORTS]
+    print(f"compose {project}: {', '.join(published)}", file=sys.stderr)
 
 
-def stop(services: tuple[str, ...] = ()) -> None:
+def stop(project: str, services: tuple[str, ...] = ()) -> None:
     """Stop services, every one of the stack by default; data stays in the pgdata volume."""
-    compose("stop", *services)
+    compose(project, "stop", *services)
 
 
-def reset() -> None:
+def reset(project: str) -> None:
     """Remove the build database. Only touches this project's containers and volume."""
-    compose("down", "--volumes", "--remove-orphans")
+    compose(project, "down", "--volumes", "--remove-orphans")
 
 
-def compose(*args: str) -> None:
-    command, env = compose_command(*args)
-    print(f"compose: {' '.join(args)}", file=sys.stderr)
+def compose(project: str, *args: str) -> None:
+    command, env = compose_command(project, *args)
+    print(f"compose {project}: {' '.join(args)}", file=sys.stderr)
     _docker(f"docker compose {' '.join(args)}", command, env)
 
 
-def compose_command(*args: str) -> tuple[list[str], dict[str, str]]:
-    """The docker compose command line and environment, with the pinned images, <NAME>_IMAGE
-    for each image of lock.toml such as DHIS2_IMAGE, and the caps."""
+def compose_command(project: str, *args: str) -> tuple[list[str], dict[str, str]]:
+    """The docker compose command line of the project (Build.project) and its environment, with
+    the pinned images, <NAME>_IMAGE for each image of lock.toml such as DHIS2_IMAGE, and the
+    caps."""
     images = {f"{name.upper()}_IMAGE": image for name, image in lock.images().items()}
     env = {**os.environ, **images, **caps()}
-    return ["docker", "compose", "--file", str(COMPOSE_FILE), *args], env
+    command = ["docker", "compose", "--file", str(COMPOSE_FILE), "--project-name", project]
+    return [*command, *args], env
 
 
 def caps() -> dict[str, str]:
@@ -169,10 +176,24 @@ def _docker(
     return result.stdout.strip() if capture else ""
 
 
-def api(timeout: float = 600) -> httpx.Client:
+def port(project: str, service: str) -> int:
+    """The host port Docker published the service's port of PORTS on, which changes at every
+    start: so looked up for each connection."""
+    command, env = compose_command(project, "port", service, str(PORTS[service]))
+    published = _docker(f"docker compose port {service}", command, env, capture=True)
+    return int(published.rsplit(":", 1)[1])
+
+
+def dsn(project: str) -> str:
+    """The connection string of the project's Postgres."""
+    return f"host=127.0.0.1 port={port(project, 'db')} dbname=dhis user=dhis password=dhis"
+
+
+def api(project: str, timeout: float = 600) -> httpx.Client:
     """The Web API, as admin. A context manager, which closes it."""
-    return httpx.Client(base_url=BASE_URL, auth=ADMIN, timeout=timeout)
+    base_url = f"http://127.0.0.1:{port(project, 'web')}"
+    return httpx.Client(base_url=base_url, auth=ADMIN, timeout=timeout)
 
 
-def connect(**kwargs) -> psycopg.Connection:
-    return psycopg.connect(PG_DSN, **kwargs)
+def connect(project: str, **kwargs) -> psycopg.Connection:
+    return psycopg.connect(dsn(project), **kwargs)

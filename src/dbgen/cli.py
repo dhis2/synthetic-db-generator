@@ -290,7 +290,7 @@ def run_stage(build: Build, name: str, **options) -> None:
     from dbgen.dhis2 import bootstrap, client, dump, load, verify
 
     if name == "bootstrap" and options.get("reset"):
-        client.reset()
+        client.reset(build.project)
     runners = {
         "compile": compile.run,
         "orgunits": orgunits.run,

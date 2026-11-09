@@ -120,9 +120,9 @@ def run(build: Build, replace: bool = False) -> None:
     steps: dict[str, float] = {}
     with timing.timed(build.dir, "load") as t:
         # A DHIS2 started by hand would cache what the load replaces, and `up db` leaves it running.
-        client.stop(("web", "web-healthcheck"))
-        with client.running(("db",), timeout=300):
-            with client.connect(autocommit=True) as pg, pg.cursor() as cur:
+        client.stop(build.project, ("web", "web-healthcheck"))
+        with client.running(build.project, ("db",), timeout=300):
+            with client.connect(build.project, autocommit=True) as pg, pg.cursor() as cur:
                 bootstrap_run = parent_stages["bootstrap"]["run"]
                 provenance.check_database(cur, bootstrap_run)
                 columns = check_columns(cur, build)
@@ -314,7 +314,7 @@ def insert_tables(
     with _duckdb(build) as con:
         con.execute("set memory_limit = '4GB'; set threads = 4")
         con.execute("install postgres; load postgres")
-        con.execute(f"attach '{client.PG_DSN}' as pg (type postgres)")
+        con.execute(f"attach '{client.dsn(build.project)}' as pg (type postgres)")
         for statement in sqlfile.script(sqlfile.SQL / "event_json.sql"):
             con.execute(statement)
         id_maps(con, build)

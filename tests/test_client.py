@@ -31,3 +31,20 @@ def test_caps_fail_on_a_value_compose_or_the_jvm_cannot_take(monkeypatch, name, 
     monkeypatch.setenv(name, value)
     with pytest.raises(UsageError, match=error):
         client.caps()
+
+
+def test_compose_command_names_the_project():
+    command, _ = client.compose_command("dbgen-checkout-3f9a1c", "stop")
+    assert command[-3:] == ["--project-name", "dbgen-checkout-3f9a1c", "stop"]
+
+
+def test_port_reads_the_host_port_docker_published(monkeypatch):
+    calls = []
+
+    def docker(name, command, env=None, capture=False):
+        calls.append(command)
+        return "127.0.0.1:49153"
+
+    monkeypatch.setattr(client, "_docker", docker)
+    assert client.port("dbgen-checkout-3f9a1c", "db") == 49153
+    assert calls[0][-3:] == ["port", "db", "5432"]

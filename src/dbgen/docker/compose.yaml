@@ -1,8 +1,9 @@
 # DHIS2 and Postgres used while building the database (`dbgen stage bootstrap`, `load`, `verify`).
-# Images are pinned in lock.toml and passed in by dbgen. Ports differ from the perf
-# harness (5432, 8080). Memory and CPUs are capped so a build cannot starve the machine, and
-# dbgen stops the stack after each step. dbgen passes the caps in, its defaults or the DBGEN_
-# variables of its environment (client.py), and checks the machine has the memory free.
+# Images are pinned in lock.toml and passed in by dbgen. Docker publishes the ports on free host
+# ports, which dbgen looks up (client.port), so builds of several checkouts run side by side. Memory
+# and CPUs are capped so a build cannot starve the machine, and dbgen stops the stack after each
+# step. dbgen passes the caps in, its defaults or the DBGEN_ variables of its environment
+# (client.py), and checks the machine has the memory free.
 name: dbgen
 
 services:
@@ -45,7 +46,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "127.0.0.1:25432:5432"
+      - "127.0.0.1::5432"
     # While a service starts, its check runs every start_interval rather than every interval, so
     # `compose up --wait` returns soon after the service is up.
     healthcheck:
@@ -65,7 +66,7 @@ services:
     volumes:
       - ./dhis.conf:/opt/dhis2/dhis.conf:ro
     ports:
-      - "127.0.0.1:28080:8080"
+      - "127.0.0.1::8080"
     depends_on:
       db:
         condition: service_healthy

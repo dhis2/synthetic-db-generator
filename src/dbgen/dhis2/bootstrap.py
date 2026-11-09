@@ -180,21 +180,21 @@ def run(build: Build) -> None:
         users = json.loads((build.stage_dir("users") / "users.json").read_text())
         api_users, copied_users = user_copies.split(build, users)
         api_orgunits, copied_orgunits = orgunit_copies.split(orgunits, api_users["users"])
-        with client.running():
-            _import(effective, api_orgunits, api_users)
-            client.stop(("web", "web-healthcheck"))
+        with client.running(build.project):
+            _import(build.project, effective, api_orgunits, api_users)
+            client.stop(build.project, ("web", "web-healthcheck"))
             # One transaction, committed when the connection closes.
-            with client.connect() as pg, pg.cursor() as cur:
+            with client.connect(build.project) as pg, pg.cursor() as cur:
                 orgunit_copies.copy(cur, copied_orgunits)
                 assign_programs(build, effective, cur)
                 user_copies.copy(cur, copied_users)
             export_idmaps(build)
-            with client.connect(autocommit=True) as pg, pg.cursor() as cur:
+            with client.connect(build.project, autocommit=True) as pg, pg.cursor() as cur:
                 provenance.mark_database(cur, build, run_id)
     provenance.record(build, "bootstrap", parents, effective, run=run_id)
 
 
-def _import(effective: dict, orgunits: dict, users: dict) -> None:
+def _import(project: str, effective: dict, orgunits: dict, users: dict) -> None:
     root_name = effective["orgunits"]["root"]["name"]
     settings = {
         "applicationTitle": f"{root_name} (synthetic)",
@@ -203,7 +203,7 @@ def _import(effective: dict, orgunits: dict, users: dict) -> None:
             "performance tests: no person, place or health facility in it is real."
         ),
     }
-    with client.api() as api:
+    with client.api(project) as api:
         api.post("/api/systemSettings", json=settings).raise_for_status()
         admin_uid = api.get("/api/me", params={"fields": "id"}).json()["id"]
         import_metadata(api, orgunits, "org units")
@@ -335,7 +335,7 @@ def export_idmaps(build: Build) -> None:
     output = build.make_stage_dir("bootstrap")
     con = duckdb.connect()
     con.execute("install postgres; load postgres")
-    con.execute(f"attach '{client.PG_DSN}' as pg (type postgres, read_only)")
+    con.execute(f"attach '{client.dsn(build.project)}' as pg (type postgres, read_only)")
     counts = {}
     for name, query in IDMAP_QUERIES.items():
         counts[name] = parquet.copy(
