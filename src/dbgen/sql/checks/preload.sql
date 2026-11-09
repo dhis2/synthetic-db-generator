@@ -77,12 +77,12 @@ group by all
 having count(*) > 1;
 
 -- name: enrollment at an org unit its program is not assigned to
--- bootstrap assigns a program to the org units of the build's area at its level.
+-- generate draws records at the org units of the build's area only.
 select e.enrollmentid, e.organisationunit_uid
 from enrollment e
 join meta_program p on p.uid = e.program_uid
 left join orgunit o
-  on o.uid = e.organisationunit_uid and o.kept and o.level_name = p.orgunit_level
+  on o.uid = e.organisationunit_uid and o.draws_records_and_users and o.level_name = p.orgunit_level
 where o.uid is null;
 
 -- name: tracked entity type differs from the program's

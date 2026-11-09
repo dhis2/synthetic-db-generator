@@ -19,15 +19,16 @@ Every draw is keyed by the org unit's code, never by a record, so an org unit is
 build of the spec, whatever area it covers. A build of an area (--orgunit) draws the whole
 hierarchy, and keeps the org units under the area's codes, their ancestors, and every org unit of
 the levels down to the deepest of the codes: a district's build keeps every region and district,
-and the wards and facilities of its district only.
+and the wards and facilities of its district only. The area is the org units under the codes
+only: its records and clerks are theirs, so a facility's build keeps every facility but draws
+records at its own.
 
 A code is its parent's and a serial, joined by '-' below the third level: QP, QP01, QP0101,
 QP0101-01, QP0101-01-001. A serial has the digits of its level's largest, two at least. Names
 are made-up words, a type's name ending its org units' names. The UID is a hash of the code.
 
-Writes orgunits.parquet, every org unit drawn, those of the area kept, each column described in its
-schema metadata, and orgunits.json, the metadata payload of the kept ones, which bootstrap
-imports.
+Writes orgunits.parquet, every org unit drawn, each column described in its schema metadata,
+and orgunits.json, the metadata payload of those imported to DHIS2, which bootstrap imports.
 """
 
 import sys
@@ -68,9 +69,14 @@ COLUMNS = parquet.describe(
             "Its traits as JSON: numbers, dates as days since 1970-01-01, 0 or 1; weight is its "
             "type's, 1 without"
         ),
-        "kept": (
-            "Whether it is of the build's area: the others are drawn too, as a total of a level "
+        "imported_to_dhis2": (
+            "Whether bootstrap imports it to DHIS2: the area, its ancestors and every org unit "
+            "of the levels down to the area's; the others are drawn too, as a total of a level "
             "above is shared among all its org units (generate)"
+        ),
+        "draws_records_and_users": (
+            "Whether generate draws records and users draws clerks and officers at it: under a "
+            "code of the build's area, or every org unit when the build covers all"
         ),
     },
 )
@@ -91,8 +97,8 @@ def run(build: Build) -> Path:
     )
     write_payload(con, effective, output / "orgunits.json")
     counts = con.execute(
-        "select level_name, count(*) from orgunit where kept group by level, level_name "
-        "order by level"
+        "select level_name, count(*) from orgunit where imported_to_dhis2 "
+        "group by level, level_name order by level"
     ).fetchall()
     print(
         f"orgunits: {sum(n for _, n in counts):,} in the build: {listed(dict(counts))}",
@@ -127,8 +133,9 @@ def _uid_or_null(namespace: str, key: str | None) -> str | None:
 
 
 def build_orgunits(effective: dict, directories: Iterable[Path] = ()) -> duckdb.DuckDBPyConnection:
-    """A connection holding table orgunit: every org unit the spec draws, with `kept` true for
-    those of the build's area. It reads and writes only the files under directories."""
+    """A connection holding table orgunit: every org unit the spec draws, with
+    `imported_to_dhis2` true for those the build's database holds and `draws_records_and_users`
+    for those under the build's codes. It reads and writes only the files under directories."""
     orgunits = effective["orgunits"]
     seed = orgunits["seed"] if orgunits["seed"] is not None else effective["build"]["seed"]
     con = connect(seed, directories)
@@ -190,7 +197,7 @@ def build_orgunits(effective: dict, directories: Iterable[Path] = ()) -> duckdb.
         create table orgunit as
         select dhis2_uid('ou', code) as uid, code, name, level, level_name, parent_code,
                dhis2_uid('ou', parent_code) as parent_uid, path, type, clerks,
-               traits::varchar as traits, kept
+               traits::varchar as traits, imported_to_dhis2, draws_records_and_users
         from unit
         order by level, code
         """
@@ -402,9 +409,11 @@ def _draw_traits(con: duckdb.DuckDBPyConnection, level: dict, scopes: set[str]) 
 
 
 def _keep(con: duckdb.DuckDBPyConnection, codes: tuple[str, ...]) -> None:
-    """Mark the org units of the area of codes: under them, above them, and of the levels down
-    to the deepest of them. Without codes, all of them."""
-    con.execute("alter table unit add column kept boolean default true")
+    """Mark the org units imported to DHIS2: under the codes, above them, and of the levels down
+    to the deepest of them; and those that draw records and users: under the codes. Without
+    codes, all of them."""
+    con.execute("alter table unit add column imported_to_dhis2 boolean default true")
+    con.execute("alter table unit add column draws_records_and_users boolean default true")
     if not codes:
         return
     found = dict(
@@ -424,18 +433,20 @@ def _keep(con: duckdb.DuckDBPyConnection, codes: tuple[str, ...]) -> None:
         )
     depth = max(found.values())
     con.execute(
-        f"""
-        update unit set kept = level <= {depth} or exists (
+        """
+        update unit set draws_records_and_users = exists (
             select 1 from unnest(?) t(c)
             where list_contains(string_split(unit.path, '/'), t.c)
         )
         """,
         [list(codes)],
     )
+    con.execute(f"update unit set imported_to_dhis2 = draws_records_and_users or level <= {depth}")
 
 
 def check_hierarchy(con: duckdb.DuckDBPyConnection) -> None:
-    """Fail on a UID or code two org units share, or a kept org unit whose parent is not."""
+    """Fail on a UID or code two org units share, or an imported org unit whose parent is
+    not."""
     [(codes,)] = con.execute(
         "select list(code order by code) from (select code from orgunit group by code "
         "having count(*) > 1)"
@@ -451,8 +462,9 @@ def check_hierarchy(con: duckdb.DuckDBPyConnection) -> None:
     [(orphans,)] = con.execute(
         """
         select list(code order by code) from orgunit
-        where kept and (parent_code not in (select code from orgunit where kept)
-                        or parent_code is null and level <> 1)
+        where imported_to_dhis2
+          and (parent_code not in (select code from orgunit where imported_to_dhis2)
+               or parent_code is null and level <> 1)
         """
     ).fetchall()
     if orphans:
@@ -460,7 +472,7 @@ def check_hierarchy(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def write_payload(con: duckdb.DuckDBPyConnection, effective: dict, path: Path) -> None:
-    """Write the kept org units and the levels as the metadata payload, on one line.
+    """Write the imported org units and the levels as the metadata payload, on one line.
 
     json_merge_patch into an empty object drops the null members (RFC 7396), so the root has no
     parent. A short name is at most 50 characters; a longer name keeps it unique by ending in the
@@ -482,7 +494,8 @@ def write_payload(con: duckdb.DuckDBPyConnection, effective: dict, path: Path) -
                     'openingDate', '{OPENING_DATE}',
                     'parent', case when parent_uid is not null
                                    then json_object('id', parent_uid) end
-                )) order by level, code) from orgunit where kept) as "organisationUnits",
+                )) order by level, code) from orgunit where imported_to_dhis2)
+                    as "organisationUnits",
                 (select list(json_object('id', dhis2_uid('oul', level::varchar), 'name', name,
                                          'level', level) order by level)
                  from unnest(getvariable('levels')) with ordinality as t(name, level))

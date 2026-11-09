@@ -13,13 +13,6 @@ replaces the table layout in a dbgen release, as dbgen never writes two.
 
 In order:
 
-* `generate` of a facility's area, such as `dbgen validate --orgunit QP0602-02-05` for 6,513
-  events, ran over 30 minutes on 5 cores and 6 GiB before it was stopped, where a ward's takes
-  seconds. The area holds every org unit down to its level, here all 28,564 facilities: find the
-  step that scales with them rather than with the area.
-* Tell builds of one area apart locally. The build name covers only the area, so a build with
-  another seed, window, dbgen commit or spec writes to the same `output/stage/<build>/` and
-  `output/<build>/`, and replaces the previous one.
 * Once the pipeline decides the runner and the sizes, fit the build to them. What pays depends on
   the runner's cores and memory: on 4 vCPUs more streams or threads gain nothing, on 16 cores they
   are the main gain.

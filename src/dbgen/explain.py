@@ -55,12 +55,12 @@ def run(build: Build, program: str | None = None, as_json: bool = False) -> None
     out.write(f"  seed {b['seed']}, window {b['start']} to {b['end']}, now {b['now']}\n")
     con = build_orgunits(effective)
     levels = con.execute(
-        "select level, level_name, count(*) filter (kept), count(*) from orgunit "
+        "select level, level_name, count(*) filter (imported_to_dhis2), count(*) from orgunit "
         "group by all order by level"
     ).fetchall()
     out.write("\norg units in the build, of those the spec draws:\n")
-    for level, name, kept, total in levels:
-        out.write(f"  {name} (level {level}): {kept:,} of {total:,}\n")
+    for level, name, imported, total in levels:
+        out.write(f"  {name} (level {level}): {imported:,} of {total:,}\n")
     expected = _expected(con, effective)
     for p in programs:
         e = expected[p["key"]]
@@ -196,7 +196,9 @@ def _expected(con: duckdb.DuckDBPyConnection, effective: dict) -> dict[str, dict
     none = {"tracked_entities": 0.0, "enrollments": 0.0, "events": 0.0}
     return {
         key: areas.get("build", none)
-        for key, areas in expected(con, effective, "case when o.kept then 'build' end").items()
+        for key, areas in expected(
+            con, effective, "case when o.draws_records_and_users then 'build' end"
+        ).items()
     }
 
 

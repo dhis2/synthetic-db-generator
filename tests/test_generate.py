@@ -179,6 +179,33 @@ tracked_entities = { total = 60, among = "District", by = "facility.weight" }
     assert sum(area.values()) < sum(whole.values())
 
 
+def test_a_facility_holds_the_records_and_clerks_of_itself_only(tmp_path):
+    """A build of a facility keeps every facility, as a district's keeps every district, but
+    draws records and clerks at its own only."""
+    body = """
+[program.PREGNANCY]
+tracked_entities = 20
+"""
+    build = Build(spec=write_spec(tmp_path, body), codes=("QP0101-01",), root=tmp_path)
+    sample(build)
+    con = duckdb.connect()
+    stage = build.stage_dir
+    [(imported, own)] = con.execute(
+        "select count(*) filter (imported_to_dhis2), any_value(uid) filter (code = 'QP0101-01') "
+        f"from '{stage('orgunits')}/orgunits.parquet' where level_name = 'Facility'"
+    ).fetchall()
+    assert imported > 1
+    [(places,)] = con.execute(
+        f"select list(distinct organisationunit_uid) from '{stage('generate')}/enrollment.parquet'"
+    ).fetchall()
+    assert places == [own]
+    [(clerks,)] = con.execute(
+        f"select list(distinct orgunit_uid) from '{stage('users')}/users.parquet' "
+        "where kind = 'clerk'"
+    ).fetchall()
+    assert clerks == [own]
+
+
 def test_a_value_may_name_another_value_of_its_event(tmp_path):
     body = """
 [program.PREGNANCY]

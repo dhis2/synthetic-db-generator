@@ -29,7 +29,7 @@ create or replace macro valid_value(vt, v) as case vt
     when 'PHONE_NUMBER' then regexp_full_match(v, '[0-9+()#./ext -]{6,50}')
     when 'EMAIL' then regexp_full_match(v, '[^@ ]+@[^@ ]+[.][^@ ]+')
     when 'URL' then regexp_full_match(v, 'https?://[^ ]+')
-    when 'ORGANISATION_UNIT' then v in (select uid from orgunit where kept)
+    when 'ORGANISATION_UNIT' then v in (select uid from orgunit where imported_to_dhis2)
     when 'USERNAME' then v in (select username from user_ref)
     else false
 end;
