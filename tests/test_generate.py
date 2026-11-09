@@ -231,6 +231,30 @@ assigned = 1
     assert [stage for stage, assigned in rows.items() if assigned] == ["PregCheck01"]
 
 
+def test_a_program_follows_up_the_share_of_its_enrollments_it_gives(tmp_path):
+    body = """
+[program.PREGNANCY]
+tracked_entities = 20
+
+[program.PREGNANCY.enrollments]
+followup = 1
+
+[program.CHILD]
+tracked_entities = 20
+"""
+    build = Build(spec=write_spec(tmp_path, body), root=tmp_path)
+    sample(build)
+    rows = dict(
+        duckdb.connect()
+        .execute(
+            "select program_uid, list_distinct(list(followup)) "
+            f"from '{build.stage_dir('generate')}/enrollment.parquet' group by all"
+        )
+        .fetchall()
+    )
+    assert rows == {"PregProgram": [True], "ChildProgra": [False]}
+
+
 def test_a_value_may_name_another_value_of_its_event(tmp_path):
     body = """
 [program.PREGNANCY]

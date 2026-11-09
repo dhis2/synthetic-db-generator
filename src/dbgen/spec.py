@@ -12,7 +12,7 @@ The spec is TOML. Every table and key is optional but [build].metadata:
     [users]           who captures and who views
     [program.<code>]  a program by its code, UID or name: volumes, visits, statuses, stages,
                       values, linking
-    [records]         deleted, followed up and updated records
+    [records]         deleted and updated records
     [load]            the order rows are written in
 
 See examples/pregnancy/pregnancy.toml for a small spec, the MNCH spec of
@@ -88,12 +88,12 @@ KEYS = {
         "trait",
         "unvalidated",
     },
-    "enrollments": {"count", "gap", "status"},
+    "enrollments": {"count", "gap", "status", "followup"},
     "visits": {"stages", "count", "spacing", "status"},
     "stage": {"count", "share", "at", "offset", "spacing", "status", "assigned"},
     "tracked_entities": {"per_orgunit", "total", "among", "by"},
     "from": {"enrollments", "where", "share", "relationship", "attributes", "at"},
-    "records": {"deleted", "followup", "updated", "entry_delay"},
+    "records": {"deleted", "updated", "entry_delay"},
     "updated": {"share", "after"},
     "load": {"order"},
 }
@@ -502,7 +502,7 @@ def _program(
     ]
     attributes = _attributes(program, attribute_fields, overrides, where)
     cocs = metadata.category_option_combos(program.category_combo)
-    enrollments, gap, status = _enrollments(table, program, where)
+    enrollments, gap, status, followup = _enrollments(table, program, where)
     return {
         "key": key,
         "uid": program.uid,
@@ -515,6 +515,7 @@ def _program(
         "enrollments": enrollments,
         "gap": gap,
         "status": status,
+        "followup": followup,
         "visits": visits,
         "stages": stages,
         "attributes": attributes,
@@ -823,8 +824,9 @@ def _attributes(
     return attributes
 
 
-def _enrollments(table: dict, program: Program, where: str) -> tuple[Any, Any, dict]:
-    """How many enrollments a tracked entity has, the gap between them and their statuses."""
+def _enrollments(table: dict, program: Program, where: str) -> tuple[Any, Any, dict, float]:
+    """How many enrollments a tracked entity has, the gap between them, their statuses and the
+    share of them followed up."""
     enrollments = _table(table.get("enrollments"), f"{where}.enrollments")
     _check_keys(enrollments, "enrollments", f"{where}.enrollments")
     status = _status(
@@ -838,7 +840,8 @@ def _enrollments(table: dict, program: Program, where: str) -> tuple[Any, Any, d
         raise UsageError(
             f"{where}.enrollments.count: {program.name} enrolls a tracked entity only once"
         )
-    return count, enrollments.get("gap", DEFAULT_GAP), status
+    followup = _fill(enrollments.get("followup", 0), f"{where}.enrollments.followup")
+    return count, enrollments.get("gap", DEFAULT_GAP), status, followup
 
 
 def _unvalidated(names, fields: list[Field], where: str) -> list[str]:
@@ -894,19 +897,23 @@ def table_suffix(key: str) -> str:
 
 
 def _records(table: dict) -> dict:
-    """[records] with its defaults: the shares of records deleted, followed up and updated, and
-    the delay of their entry."""
+    """[records] with its defaults: the shares of records deleted and updated, and the delay of
+    their entry."""
     if "assigned" in table:
         raise UsageError(
             'records.assigned: set it on the stage, such as [program.<code>.stage."<name>"] '
             "assigned = 0.05, for the stages whose metadata enables user assignment"
+        )
+    if "followup" in table:
+        raise UsageError(
+            "records.followup: set it on the enrollments of a program, such as "
+            "[program.<code>.enrollments] followup = 0.03"
         )
     _check_keys(table, "records", "records")
     updated = _table(table.get("updated"), "records.updated")
     _check_keys(updated, "updated", "records.updated")
     return {
         "deleted": _fill(table.get("deleted", 0), "records.deleted"),
-        "followup": _fill(table.get("followup", 0), "records.followup"),
         "updated": {
             "share": _fill(updated.get("share", 0), "records.updated.share"),
             "after": updated.get("after", {"exponential": 30}),
