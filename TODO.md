@@ -138,8 +138,8 @@ What it measures, by the spec key it fills:
   and records per month (`build.start`, `build.end`)
 * per data element and attribute: its fill rate (`fill`), each option's share (`weights`: option
   codes are metadata), a number's 1st to 99th percentiles (its distribution), a text's distinct
-  values and the counts of its 1st, 10th, 100th and 1000th most common value (`words`' `n` and
-  `s`), never a value
+  values and the counts of its 1st, 10th, 100th and 1000th most common value (`words`' `n`, `s`
+  and `q`), never a value
 * `[users]`: users per level, the sizes of their scopes, the share of superusers, who skip the
   access checks a query otherwise joins
 * the physical side: table and index sizes, the indexes beyond DHIS2's own (one an implementation

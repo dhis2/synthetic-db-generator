@@ -20,3 +20,5 @@ def test_the_guide_shows_each_picture_with_its_line():
     for name, line, _ in plots["EXAMPLES"]:
         assert line in guide, f"docs/distributions.md lacks the line of {name}: {line}"
         assert f"img/{name}.svg" in guide, f"docs/distributions.md lacks img/{name}.svg"
+    for name, *_ in plots["RANKS"]:
+        assert f"img/{name}.svg" in guide, f"docs/distributions.md lacks img/{name}.svg"

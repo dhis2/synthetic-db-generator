@@ -246,5 +246,48 @@ age = { sql = "case when u('range') < 0.15 then 15 + 5 * u('age') when u('range'
 compares the same draw `u('range')` with the shares added up: 0.15, 0.15 + 0.30 = 0.45, and
 0.45 + 0.25 = 0.70. The gestational age in [sql](#sql) is drawn the same way.
 
+## Names and other words
+
+`words` writes a made-up word such as Duhelos: it draws a rank from 1 to `n`, and makes the word
+of that rank from syllables, hashed from the seed, the vocabulary and the rank. So every record
+of a rank gets the same word.
+
+```toml
+GIVEN_NAME = { words = { n = 20_000, s = 1.4, q = 25, vocabulary = "given" } }
+FAMILY_NAME = { words = { n = 100_000, s = 1.05, q = 20, vocabulary = "family" } }
+```
+
+* `n`: how many words there are to draw from, 5,000 unless set.
+* `s` and `q`: how the records spread over the words, 1.1 and 0 unless set, see below.
+* `vocabulary`: a name for the made-up words, not a list. Fields of the same vocabulary share
+  their words, so a mother's and her child's family names can match. It defaults to the field's
+  name.
+* `count`: how many words a value has, 1 unless set. A name is one word, a `LONG_TEXT` is six.
+
+The rank follows the Zipf–Mandelbrot law: rank $k$ has about weight $(k + q)^{-s}$. `q = 0` is
+Zipf's law. The rank is drawn from the law as a continuous one, so at `q = 0` the top word gets a
+quarter less than the weight gives.
+
+`q` sets how many top ranks are alike: ranks up to about `q` get similar shares, so the larger
+`q`, the fewer records the top word gets. Here the top word gets 25% of the records at `q = 0`,
+1.6% at `q = 25` and 0.45% at `q = 100`:
+
+![words-q](img/words-q.svg)
+
+`s` sets how fast the shares fall past rank `q`. On these log scales a line falls with slope `s`
+there: 10 times the rank has $10^s$ times fewer records. A larger `s` leaves fewer rare words and
+puts more records on the top ones, here 0.8% at `s = 1.1` and 3.7% at `s = 2`:
+
+![words-s](img/words-s.svg)
+
+One Zipf exponent can't give names both a flat head and a steep tail: with `n = 40_000, s = 1.1`
+the top first name holds 10% of people, against 2.1% in the US. The lines above are fitted to US
+names: the top first name holds 1.6% and the top family name 0.7%, against 2.1% and 0.8% in the
+US.
+
+How many people share the top family names differs most between countries: a smaller `q` or a
+larger `s` gives the top ranks more people. The top name matters for performance, as a search for
+it matches the most records.
+
 [leis]: https://www.vldb.org/pvldb/vol9/p204-leis.pdf
 [dsb]: https://www.vldb.org/pvldb/vol14/p3376-ding.pdf

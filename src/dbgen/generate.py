@@ -49,6 +49,7 @@ the org units and users it read: two builds of one spec, seed and DuckDB give th
 
 import difflib
 import json
+import math
 import re
 import shutil
 import sys
@@ -1086,16 +1087,29 @@ def format_value(raw: str, value_type: str, gen) -> str:
 # varchar value for the record of key.
 
 
+WORDS_KEYS = ("n", "s", "q", "count", "vocabulary")
+
+
 def _words(prog: Program, spec, key: str, label: str, vt: str) -> str:
     spec = spec if isinstance(spec, dict) else {}
+    unknown = [k for k in spec if k not in WORDS_KEYS]
+    if unknown:
+        raise UsageError(
+            f"{prog.where(label)}.words: unknown key {', '.join(unknown)}; words takes "
+            f"{', '.join(WORDS_KEYS)}"
+        )
     n, s, count = spec.get("n", 5000), spec.get("s", 1.1), spec.get("count", 1)
+    q = spec.get("q", 0)
     vocabulary = spec.get("vocabulary", label)
     if type(n) is not int or type(count) is not int or n < 1 or count < 1:
         raise UsageError(f"{prog.where(label)}.words: n and count must be whole numbers, 1 or more")
-    if isinstance(s, bool) or not isinstance(s, int | float) or s <= 0:
+    # A comparison with inf also fails nan, which TOML reads as a float.
+    if isinstance(s, bool) or not isinstance(s, int | float) or not 0 < s < math.inf:
         raise UsageError(f"{prog.where(label)}.words: s must be a number above 0")
+    if isinstance(q, bool) or not isinstance(q, int | float) or not 0 <= q < math.inf:
+        raise UsageError(f"{prog.where(label)}.words: q must be a number, 0 or more")
     words = [
-        f"word({quote(vocabulary)}, rand_zipf({key}, {quote(f'{label}#{i}')}, {n}, {s!r}))"
+        f"word({quote(vocabulary)}, rand_zipf({key}, {quote(f'{label}#{i}')}, {n}, {s!r}, {q!r}))"
         for i in range(count)
     ]
     del prog, vt
