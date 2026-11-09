@@ -469,7 +469,7 @@ compile ─▶ orgunits ─▶ users ─┬─▶ generate ─────┐
 | `orgunits` | draw the org unit hierarchy from the spec's levels | DuckDB |
 | `users` | make the clerks, officers and admin | DuckDB |
 | `generate` | draw the tracker data and write it as DHIS2's tables, then check it | DuckDB |
-| `bootstrap` | start DHIS2 on an empty database, import the org units, users and metadata | DHIS2, Postgres |
+| `bootstrap` | start DHIS2 on an empty database, import the metadata and a few org units and users, copy the others in SQL | DHIS2, Postgres |
 | `load` | bulk load the tracker tables, then build the indexes and analyze | Postgres |
 | `verify` | check the loaded database, and send a sample of records through DHIS2's importer | DHIS2, Postgres |
 | `dump` | dump the database and write its manifest | Postgres |
@@ -479,8 +479,10 @@ compile ─▶ orgunits ─▶ users ─┬─▶ generate ─────┐
 
 ### Design choices
 
-* **Metadata through DHIS2's API, tracker data through Postgres `COPY`**, as it is too large for
-  the API. The [checks](#checks) stand in for the importer's validation.
+* **Metadata through DHIS2's API, what is too large for it in SQL**: the tracker data through
+  Postgres `COPY`, whose validation the [checks](#checks) stand in for. Of the org units and the
+  users, the API imports a few of each level or kind, and `bootstrap` copies the others in SQL
+  from them, then assigns the programs to their org units.
 * **Metadata by UID until `load`**: `generate` writes DHIS2's tables with the metadata's UIDs,
   which `load` swaps for `bootstrap`'s internal IDs as it copies, and builds `eventdatavalues` from
   lists of values. So `generate` needs no DHIS2, and a spec change reruns `generate` and `load`,
