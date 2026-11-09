@@ -206,12 +206,15 @@ tracked_entities = 20
     assert clerks == [own]
 
 
-def test_events_are_assigned_only_in_a_stage_that_enables_user_assignment(tmp_path):
+def test_a_stage_assigns_the_share_of_its_events_it_gives(tmp_path):
     body = """
 [program.PREGNANCY]
 tracked_entities = 20
 
-[records]
+[program.PREGNANCY.visits]
+stages = ["Check", "Lab"]
+
+[program.PREGNANCY.stage.Check]
 assigned = 1
 """
     build = Build(spec=write_spec(tmp_path, body), root=tmp_path)

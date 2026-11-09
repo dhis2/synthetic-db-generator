@@ -90,10 +90,10 @@ KEYS = {
     },
     "enrollments": {"count", "gap", "status"},
     "visits": {"stages", "count", "spacing", "status"},
-    "stage": {"count", "share", "at", "offset", "spacing", "status"},
+    "stage": {"count", "share", "at", "offset", "spacing", "status", "assigned"},
     "tracked_entities": {"per_orgunit", "total", "among", "by"},
     "from": {"enrollments", "where", "share", "relationship", "attributes", "at"},
-    "records": {"deleted", "followup", "assigned", "updated", "entry_delay"},
+    "records": {"deleted", "followup", "updated", "entry_delay"},
     "updated": {"share", "after"},
     "load": {"order"},
 }
@@ -152,19 +152,7 @@ def compile_spec(path: Path, codes: tuple[str, ...] = ()) -> tuple[dict, Metadat
         "unvalidated": {p["key"]: p.pop("unvalidated") for p in programs},
     }
     _check_linking(effective, metadata)
-    _check_assigned(effective)
     return effective, metadata
-
-
-def _check_assigned(effective: dict) -> None:
-    """Fail on assigned events when no stage takes them: generate assigns only events of the
-    stages that enable user assignment."""
-    stages = (s for p in effective["programs"] for s in p["stages"])
-    if effective["records"]["assigned"] > 0 and not any(s["user_assignment"] for s in stages):
-        raise UsageError(
-            "records.assigned: no program stage of the metadata enables user assignment "
-            "(enableUserAssignment), so no event can be assigned; leave assigned out"
-        )
 
 
 def load_toml(path: Path) -> dict:
@@ -725,7 +713,6 @@ def _stage(
         "uid": stage.uid,
         "name": stage.name,
         "repeatable": stage.repeatable,
-        "user_assignment": stage.user_assignment,
         "in_visits": in_visits,
         "status": _status(
             table.get("status"),
@@ -734,9 +721,15 @@ def _stage(
             f"{stage_where}.status",
         ),
     }
+    entry["assigned"] = _fill(table.get("assigned", 0), f"{stage_where}.assigned")
+    if entry["assigned"] > 0 and not stage.user_assignment:
+        raise UsageError(
+            f"{stage_where}.assigned: the stage does not enable user assignment in the metadata "
+            "(enableUserAssignment), and DHIS2 warns on an event assigned in it"
+        )
     if in_visits:
-        if set(table) - {"status"}:
-            raise UsageError(f"{stage_where}: a stage of the visits takes only status")
+        if set(table) - {"status", "assigned"}:
+            raise UsageError(f"{stage_where}: a stage of the visits takes only status and assigned")
     else:
         at = table.get("at", "start")
         if at not in ("start", "end"):
@@ -901,15 +894,19 @@ def table_suffix(key: str) -> str:
 
 
 def _records(table: dict) -> dict:
-    """[records] with its defaults: the shares of records deleted, followed up, assigned and
-    updated, and the delay of their entry."""
+    """[records] with its defaults: the shares of records deleted, followed up and updated, and
+    the delay of their entry."""
+    if "assigned" in table:
+        raise UsageError(
+            'records.assigned: set it on the stage, such as [program.<code>.stage."<name>"] '
+            "assigned = 0.05, for the stages whose metadata enables user assignment"
+        )
     _check_keys(table, "records", "records")
     updated = _table(table.get("updated"), "records.updated")
     _check_keys(updated, "updated", "records.updated")
     return {
         "deleted": _fill(table.get("deleted", 0), "records.deleted"),
         "followup": _fill(table.get("followup", 0), "records.followup"),
-        "assigned": _fill(table.get("assigned", 0), "records.assigned"),
         "updated": {
             "share": _fill(updated.get("share", 0), "records.updated.share"),
             "after": updated.get("after", {"exponential": 30}),

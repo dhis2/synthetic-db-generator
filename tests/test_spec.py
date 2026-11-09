@@ -1,6 +1,5 @@
 import json
 import re
-from pathlib import Path
 
 import duckdb
 import pytest
@@ -583,10 +582,14 @@ def test_a_window_from_a_leap_day_ends_on_feb_28(tmp_path):
     assert (eff["build"]["start"], eff["build"]["end"]) == ("2024-02-29", "2029-02-28")
 
 
-def test_assigned_events_need_a_stage_that_enables_user_assignment(tmp_path):
-    metadata = tmp_path / "metadata.json"
-    metadata.write_text(Path(METADATA[0]).read_text().replace('"enableUserAssignment": true,', ""))
-    spec = write_spec(tmp_path, "[records]\nassigned = 0.05")
-    spec.write_text(spec.read_text().replace(METADATA[0], str(metadata)))
-    with pytest.raises(UsageError, match="records.assigned: no program stage"):
-        compile_stage.compile_build(Build(spec=spec, root=tmp_path))
+def test_a_stage_assigns_events_only_if_its_metadata_enables_user_assignment(tmp_path):
+    eff = effective(tmp_path, "[program.PREGNANCY.stage.Check]\nassigned = 0.2")
+    stages = {s["name"]: s["assigned"] for s in program(eff, "PREGNANCY")["stages"]}
+    assert stages == {"Profile": 0.0, "Check": 0.2, "Lab": 0.0, "Close": 0.0}
+    with pytest.raises(UsageError, match="stage.Lab.assigned: the stage does not enable user"):
+        effective(tmp_path, "[program.PREGNANCY.stage.Lab]\nassigned = 0.2")
+
+
+def test_records_take_no_assigned(tmp_path):
+    with pytest.raises(UsageError, match=re.escape("records.assigned: set it on the stage")):
+        effective(tmp_path, "[records]\nassigned = 0.05")
