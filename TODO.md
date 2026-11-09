@@ -1,7 +1,5 @@
 # TODO
 
-* look at the name generation
-
 ## Release
 
 `dhis2/synthetic-databases` builds the databases with dbgen, upgrades them to each later DHIS2
