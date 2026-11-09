@@ -13,12 +13,16 @@ replaces the table layout in a dbgen release, as dbgen never writes two.
 
 In order:
 
-* Fit MNCH's records to ANC's and EIR's program rules. verify's importer validation of a QP1613
-  sample gives 6,905 warnings in ANC and 162 in EIR, no errors: values a rule assigns, such as the
-  weight category, parity or the quick check's date, differ from what it computes (E1308), values
-  its checks flag (E1300), and E1120. Nothing fails, but imports and Capture run the rules, as the
-  import stream will: find which rules matter, and draw their fields as the rules compute them,
-  in the MNCH spec of synthetic-databases or with what dbgen lacks for it.
+* Assign events to users only in stages that allow it. `[records] assigned` assigns a share of
+  every stage's events to their clerk, and DHIS2 warns E1120 ("ProgramStage does not allow user
+  assignment") for a stage without `enableUserAssignment`: 275 times in verify's ANC sample of
+  QP1613, 56 in EIR's.
+* Make MNCH's values agree with ANC's and EIR's program rules. dbgen draws each value by itself,
+  while a rule computes some values from others, such as the weight category from the weight.
+  verify sends a sample of QP1613 back through the importer, which runs the rules, and they
+  warn 6,630 times in ANC and 106 in EIR. Warnings, not errors: E1308, a rule would
+  replace the value, and E1300, a rule shows a warning. Capture runs the rules too, as an import
+  stream would: find the rules that matter, and draw their fields as they compute them.
 * The import stream, once dumps are published. TrackerTest imports Synthea's women and children,
   whole histories without UIDs, as admin, in a loop: nothing continues the database, while in a
   live instance most writes do.
