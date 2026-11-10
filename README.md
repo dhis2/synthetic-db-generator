@@ -48,7 +48,7 @@ adds what the metadata cannot say: how much, how it is spread, and what depends 
 
 ## Concepts
 
-* **Metadata**: a DHIS2 metadata export of the tracker programs to fill. An event program fails.
+* **Metadata**: a DHIS2 metadata export of the tracker programs to fill.
 * **Spec**: a TOML file of what the metadata cannot say (see [Write a spec](#write-a-spec)).
 * **Org units**: a hierarchy the spec draws, a root and levels below it, such as districts and
   facilities, each with a code that `dbgen areas` lists.
@@ -57,6 +57,12 @@ adds what the metadata cannot say: how much, how it is spread, and what depends 
   with events of the program's stages. A visit is one event of each of several stages, on one day.
 * **Trait**: a hidden value of an org unit, tracked entity or enrollment that fields depend on
   (see [Traits](#traits)).
+
+## Limitations
+
+* Tracker programs only: an event program fails.
+* No record is deleted.
+* An event is entered on its day, never later.
 
 ## Write a spec
 
@@ -200,8 +206,7 @@ order = "created" # rows in the order a live instance inserts them
 * `attributes`: the same for a tracked entity's attributes, drawn once, at its registration.
 * `[users]`: the `clerks` per org unit, the levels of view-only `officers`, the `search_level`,
   and the users' `prefix` and `password`.
-* `[records]`: the share of records updated after their creation, and the `entry_delay` in days
-  from an event to its entry. dbgen deletes no records.
+* `[records]`: the share of records `updated` after their creation, and the days `after` it.
 * `[load]`: the `order` of the rows, `created` as a live instance inserts them, the default, or
   `parallel`, which loads faster and interleaves them on disk.
 

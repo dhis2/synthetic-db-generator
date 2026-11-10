@@ -119,6 +119,8 @@ What it measures, by the spec key it fills:
   enrollments, events and relationships, whether one is deleted without its parent, whether they
   cluster by org unit or soon after creation, and when the instance last removed soft-deleted
   data (Data Administration's maintenance hard-deletes them)
+* events entered late, which dbgen does not draw yet: the days from an event's date to its entry,
+  by stage
 * per data element and attribute: its fill rate (`fill`), each option's share (`weights`: option
   codes are metadata), a number's 1st to 99th percentiles (its distribution), a text's distinct
   values and the counts of its 1st, 10th, 100th and 1000th most common value (`words`' `n`, `s`
