@@ -73,13 +73,14 @@ def explained(tmp_path, capsys, body: str) -> str:
 
 def test_explain_shows_every_key_a_spec_sets(tmp_path, capsys):
     out = explained(tmp_path, capsys, EVERY_KEY)
-    # A key heads its line, or follows another of its block on the line of the metadata's or the
-    # defaults; a table's own keys are in its value, such as { share = 0.1, after = 5 }.
+    # A key heads its line, its value after it or below it when both do not fit, or follows another
+    # of its block on the line of the metadata's or the defaults; a table's own keys are in its
+    # value, such as { share = 0.1, after = 5 }.
     tables = ["build", "users", "load", "program", "enrollments", "visits", "stage", "from"]
     for table in tables:
         # A program's traits are the spec's own, named by its expressions.
         for key in spec.KEYS[table] - {"trait"}:
-            assert re.search(rf"(^ *|: |, ){key}[ :,]", out, re.MULTILINE), f"{table}.{key}"
+            assert re.search(rf"(^ *|: |, ){key}([ :,]|$)", out, re.MULTILINE), f"{table}.{key}"
     for table in ("records", "updated", "tracked_entities"):
         for key in spec.KEYS[table]:
             assert re.search(rf"\b{key}\b", out), f"{table}.{key}"
