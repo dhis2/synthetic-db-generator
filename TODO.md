@@ -113,8 +113,12 @@ What it measures, by the spec key it fills:
   (`tracked_entities`' `by`, the facility traits)
 * per program: tracked entities, enrollments per tracked entity and events per enrollment by stage
   as quantiles (`enrollments.count`, `visits.count`, a stage's `share`), the days between them
-  (`gap`, `spacing`), the statuses and the shares followed up and deleted (`status`, `followup`,
-  `[records]`), and records per month (`build.start`, `build.end`)
+  (`gap`, `spacing`), the statuses and the share followed up (`status`, `followup`), and records
+  per month (`build.start`, `build.end`)
+* deleted records, which dbgen does not draw yet: the share deleted of tracked entities,
+  enrollments, events and relationships, whether one is deleted without its parent, whether they
+  cluster by org unit or soon after creation, and when the instance last removed soft-deleted
+  data (Data Administration's maintenance hard-deletes them)
 * per data element and attribute: its fill rate (`fill`), each option's share (`weights`: option
   codes are metadata), a number's 1st to 99th percentiles (its distribution), a text's distinct
   values and the counts of its 1st, 10th, 100th and 1000th most common value (`words`' `n`, `s`

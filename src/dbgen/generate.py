@@ -31,7 +31,7 @@ eventdatavalues. A program's records, in the order generate draws them:
 9. times and users: an event is created in working hours on its day by a clerk of its org unit,
    an enrollment 5 minutes before its first event, a tracked entity a minute before its first
    enrollment, a relationship of a linked tracked entity minutes after the later of its two;
-   updates and deletions at the shares of [records], follow-ups at each program's
+   updates at the share of [records], follow-ups at each program's
 10. the tables (sql/tables.sql): ids by creation time, tracker UIDs from them, and the rows
     updated after their creation, which load updates in that order
 11. the pre-load checks (sql/checks/preload.sql) against the metadata files' tables, which
@@ -94,7 +94,7 @@ COLUMNS = {
         "created": "A minute before its first enrollment was created",
         "lastupdated": "Its last update, at least its enrollments' and events'",
         "inactive": "Always false",
-        "deleted": "Whether it is soft deleted ([records].deleted)",
+        "deleted": "Always false: dbgen deletes no records",
         "lastsynchronized": "Always 1970-01-01, never synchronized",
         "organisationunit_uid": "UID of the org unit that registered it",
         "trackedentitytype_uid": "UID of its tracked entity type",
@@ -120,7 +120,7 @@ COLUMNS = {
         "completeddate": "When it was completed, null unless COMPLETED",
         "followup": "Whether it is marked for follow-up, at its program's share (followup)",
         "completedby": "Username of the clerk who completed it",
-        "deleted": "Whether it is soft deleted, as its tracked entity",
+        "deleted": "Always false: dbgen deletes no records",
         "status": "ACTIVE, COMPLETED or CANCELLED",
         "trackedentityid": "Internal ID of its tracked entity",
         "program_uid": "UID of its program",
@@ -145,7 +145,7 @@ COLUMNS = {
         "enrollmentid": "Internal ID of its enrollment",
         "programstage_uid": "UID of its program stage",
         "attributeoptioncombo_uid": "UID of its attribute option combo, null for the default",
-        "deleted": "Whether it is soft deleted, as its tracked entity",
+        "deleted": "Always false: dbgen deletes no records",
         "scheduleddate": "The day it was scheduled for",
         "occurreddate": "The day it occurred, null when SCHEDULE or SKIPPED",
         "organisationunit_uid": "UID of its org unit",
@@ -174,7 +174,7 @@ COLUMNS = {
         "to_relationshipitemid": "Internal ID of its to item: 2 relationshipid",
         "key": "UIDs of the relationship type, the from and the to, joined by _",
         "inverted_key": "UIDs of the relationship type, the to and the from, joined by _",
-        "deleted": "Whether it is soft deleted, as one of its tracked entities is",
+        "deleted": "Always false: dbgen deletes no records",
     },
     "relationshipitem": {
         "relationshipitemid": "Internal ID: 2 relationshipid - 1 for from, 2 relationshipid for to",
@@ -1301,7 +1301,7 @@ left join val_{k} v using (ev_key)"""
        greatest(m.created, c.created)
            + to_seconds(floor(60 + rand_u(t.te_key, 'relationship') * 540)::bigint) as created,
        case when m.created > c.created then m.clerk else c.clerk end as clerk,
-       m.deleted or c.deleted as deleted
+       false as deleted
 from te_{k} t
 join timed_te c on c.te_key = t.te_key
 join timed_te m on m.te_key = t.source_te_key"""
@@ -1355,8 +1355,7 @@ join (select distinct orgunit_uid, n_clerks from clerk) nc on nc.orgunit_uid = e
 join clerk c on c.orgunit_uid = e.orgunit and c.n = draw(e.en_key, 'clerk') % nc.n_clerks""",
         f"""-- records: tracked entities, registered a minute before their first enrollment
 create or replace table timed_te as
-select t.*, f.created - interval 1 minute as created, f.clerk,
-       rand_u(t.te_key, 'records.deleted') < {float(records["deleted"])!r} as deleted
+select t.*, f.created - interval 1 minute as created, f.clerk
 from ({union(te_parts)}) t
 join (select te_key, min(created) as created, arg_min(clerk, created) as clerk
       from timed_enrollment group by te_key) f using (te_key)""",
@@ -1385,11 +1384,9 @@ select ev.ev_key, ev.en_key, ev.program, ev.stage, ev.orgunit,
        ev.clerk,
        case when rand_u(ev.ev_key, 'stage.assigned') < {assigned} then ev.clerk end
            as assigned,
-       ev.aoc, coalesce(t.deleted, false) as deleted,
+       ev.aoc, false as deleted,
        coalesce(ev.datavalues, []) as datavalues
 from timed_event ev
-join all_enrollment e using (en_key)
-join timed_te t using (te_key)
 left join updates u on u.kind = 'event' and u.k = ev.ev_key""",
         f"""-- records: enrollments
 create or replace table out_enrollment as
@@ -1400,9 +1397,8 @@ select e.en_key, e.te_key, e.program, e.orgunit, e.number, of_days(e.start_day) 
                          e.created)) as lastupdated,
        e.completed, e.clerk, e.completed_by,
        rand_u(e.en_key, 'enrollments.followup') < {followup} as followup,
-       t.deleted
+       false as deleted
 from timed_enrollment e
-join timed_te t using (te_key)
 left join updates u on u.kind = 'enrollment' and u.k = e.en_key""",
         """-- records: tracked entities
 create or replace table out_trackedentity as
@@ -1410,7 +1406,7 @@ select t.te_key, t.program, t.tracked_entity_type, t.orgunit, t.created,
        greatest(coalesce(u.updated, t.created),
                 (select max(lastupdated) from out_enrollment e where e.te_key = t.te_key))
            as lastupdated,
-       t.clerk, t.deleted
+       t.clerk, false as deleted
 from timed_te t
 left join updates u on u.kind = 'trackedentity' and u.k = t.te_key""",
         f"""-- records: attribute values
