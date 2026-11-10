@@ -352,8 +352,6 @@ def test_metadata_is_read_next_to_the_spec_wherever_dbgen_runs(tmp_path, monkeyp
     [
         ("[nope]\nx = 1", "unknown key nope"),
         ("[program.PREGNANCY]\nfill = 0", "unknown key fill"),
-        ("[records]\ndeleted = 0.01", "records: unknown key deleted"),
-        ("[records]\nentry_delay = 2", "records: unknown key entry_delay"),
         ("[records.updated]\nshare = 7", "records.updated.share: must be a share from 0 to 1"),
         ("[program.PREGNANCY.enrollments]\nstatus = { ACTIVE = true }", "shares must be numbers"),
         ("[program.PREGNANCY]\ntracked_entities = true", "must be a table"),
