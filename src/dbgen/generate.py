@@ -1235,9 +1235,6 @@ def lifecycle(effective: dict) -> list[str]:
     records = effective["records"]
     upd = records["updated"]
     after = distribution.Compiler("k").compile(upd["after"], "records.updated.after")
-    entry_delay = distribution.Compiler("ev_key").compile(
-        records["entry_delay"], "records.entry_delay"
-    )
     # The share of each stage's events assigned to their clerk (the stage's assigned).
     shares = [
         f"when {quote(s['uid'])} then {s['assigned']!r}"
@@ -1271,7 +1268,7 @@ def lifecycle(effective: dict) -> list[str]:
        case when ev.status in ('SCHEDULE', 'SKIPPED')
             then e.start_day + coalesce(lag(ev.offset_days) over (
                 partition by ev.en_key, ev.stage order by ev.number), 0)
-            else ev.day + floor(greatest({entry_delay}, 0)) end as entry_day,
+            else ev.day end as entry_day,
        v.datavalues
 from ev_{k} ev
 join enr_{k} e using (en_key)

@@ -12,7 +12,7 @@ The spec is TOML. Every table and key is optional but [build].metadata:
     [users]           who captures and who views
     [program.<code>]  a program by its code, UID or name: volumes, visits, statuses, stages,
                       values, linking
-    [records]         updated records, and the delay of their entry
+    [records]         records updated after their creation
     [load]            the order rows are written in
 
 See examples/pregnancy/pregnancy.toml for a small spec, the MNCH spec of
@@ -93,7 +93,7 @@ KEYS = {
     "stage": {"count", "share", "at", "offset", "spacing", "status", "assigned"},
     "tracked_entities": {"per_orgunit", "total", "among", "by"},
     "from": {"enrollments", "where", "share", "relationship", "attributes", "at"},
-    "records": {"updated", "entry_delay"},
+    "records": {"updated"},
     "updated": {"share", "after"},
     "load": {"order"},
 }
@@ -897,7 +897,7 @@ def table_suffix(key: str) -> str:
 
 
 def _records(table: dict) -> dict:
-    """[records] with its defaults: the share of records updated, and the delay of their entry."""
+    """[records] with its defaults: the share of records updated after their creation."""
     if "assigned" in table:
         raise UsageError(
             'records.assigned: set it on the stage, such as [program.<code>.stage."<name>"] '
@@ -916,7 +916,6 @@ def _records(table: dict) -> dict:
             "share": _fill(updated.get("share", 0), "records.updated.share"),
             "after": updated.get("after", {"exponential": 30}),
         },
-        "entry_delay": table.get("entry_delay", 0),
     }
 
 

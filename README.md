@@ -200,8 +200,7 @@ order = "created" # rows in the order a live instance inserts them
 * `attributes`: the same for a tracked entity's attributes, drawn once, at its registration.
 * `[users]`: the `clerks` per org unit, the levels of view-only `officers`, the `search_level`,
   and the users' `prefix` and `password`.
-* `[records]`: the share of records updated after their creation, and the `entry_delay` in days
-  from an event to its entry. dbgen deletes no records.
+* `[records]`: the share of records `updated` after their creation, and the days `after` it.
 * `[load]`: the `order` of the rows, `created` as a live instance inserts them, the default, or
   `parallel`, which loads faster and interleaves them on disk.
 
@@ -319,6 +318,11 @@ past. The spec fills such a field as a live instance holds it, and lists it in i
 * `dbgen validate <spec> --orgunit <code>` submits every record of a small area to DHIS2's
   importer with `importMode=VALIDATE`, which runs the program rules and writes nothing, and
   reports the errors and warnings by code, rule and field. Any error fails.
+
+### Limitations
+
+* No record is deleted.
+* An event is entered on its day, never later.
 
 ## Build a database
 
