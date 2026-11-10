@@ -150,6 +150,13 @@ def compile_spec(path: Path, codes: tuple[str, ...] = ()) -> tuple[dict, Metadat
         # Per program, the fields validate and verify leave out of what they submit to the
         # importer: kept apart from the programs, as they change no record (provenance.PARTS).
         "unvalidated": {p["key"]: p.pop("unvalidated") for p in programs},
+        # The keys the spec sets of each table, which explain tells from the defaults: kept
+        # apart, as they change no record either.
+        "spec_keys": {
+            **{name: sorted(_table(raw.get(name), name)) for name in ("build", "users", "load")},
+            "records": sorted(_table(raw.get("records"), "records")),
+            "programs": {p["key"]: p.pop("spec_keys") for p in programs},
+        },
     }
     _check_linking(effective, metadata)
     return effective, metadata
@@ -527,6 +534,14 @@ def _program(
             where,
         ),
         "from": _from(table.get("from"), where, taken),
+        "spec_keys": {
+            "program": sorted(table),
+            **{
+                name: sorted(_table(table.get(name), f"{where}.{name}"))
+                for name in ("enrollments", "visits", "from")
+            },
+            "stages": {uid: sorted(t) for uid, t in stage_tables.items()},
+        },
     }
 
 

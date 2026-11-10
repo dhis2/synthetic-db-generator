@@ -316,9 +316,12 @@ past. The spec fills such a field as a live instance holds it, and lists it in i
 
 ### Check a spec
 
-* `dbgen explain <spec>` prints the effective spec: every field that gets a value with how its
-  values are drawn and where that came from, the metadata or the spec, how many optional fields
-  are left empty, and the records it expects. It fails where `compile` would.
+* `dbgen explain <spec>` prints the effective spec, table by table as the spec writes it: each key
+  the spec sets on its own line, then on one line what the metadata gives the others, naming its
+  property, and on one more dbgen's defaults. A key the spec sets over the metadata says so, such
+  as `spacing 7 days [over standardInterval 28]`. Every field that gets a value shows how it is
+  drawn, `[default]` where the metadata gives it, each stage how many optional fields it leaves
+  empty, and each program the records it expects. It fails where `compile` would.
 * `dbgen sample <spec> --orgunit <code>` generates the records of an area as Parquet files (see
   [Inspect the Parquet files](#inspect-the-parquet-files)).
 * `dbgen validate <spec> --orgunit <code>` submits every record of a small area to DHIS2's
