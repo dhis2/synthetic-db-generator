@@ -48,7 +48,7 @@ adds what the metadata cannot say: how much, how it is spread, and what depends 
 
 ## Concepts
 
-* **Metadata**: a DHIS2 metadata export of the tracker programs to fill. An event program fails.
+* **Metadata**: a DHIS2 metadata export of the tracker programs to fill.
 * **Spec**: a TOML file of what the metadata cannot say (see [Write a spec](#write-a-spec)).
 * **Org units**: a hierarchy the spec draws, a root and levels below it, such as districts and
   facilities, each with a code that `dbgen areas` lists.
@@ -57,6 +57,12 @@ adds what the metadata cannot say: how much, how it is spread, and what depends 
   with events of the program's stages. A visit is one event of each of several stages, on one day.
 * **Trait**: a hidden value of an org unit, tracked entity or enrollment that fields depend on
   (see [Traits](#traits)).
+
+## Limitations
+
+* Tracker programs only: an event program fails.
+* No record is deleted.
+* An event is entered on its day, never later.
 
 ## Write a spec
 
@@ -318,11 +324,6 @@ past. The spec fills such a field as a live instance holds it, and lists it in i
 * `dbgen validate <spec> --orgunit <code>` submits every record of a small area to DHIS2's
   importer with `importMode=VALIDATE`, which runs the program rules and writes nothing, and
   reports the errors and warnings by code, rule and field. Any error fails.
-
-### Limitations
-
-* No record is deleted.
-* An event is entered on its day, never later.
 
 ## Build a database
 
