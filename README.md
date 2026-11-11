@@ -437,7 +437,10 @@ which `validate` and `verify` leave out.
   importer with `importMode=VALIDATE`, which runs the program rules and writes nothing. It reports
   the errors and warnings by code, rule and field, and fails on any error.
 
-`dbgen describe` prints what a Parquet file holds: its rows, metadata, and each column's type and
+### Inspect the Parquet files
+
+The stages up to `bootstrap` write Parquet files to `output/stage/<build>/<stage>/`.
+`dbgen describe` prints what one holds: its rows, metadata, and each column's type and
 description. The [DuckDB CLI](https://duckdb.org/docs/installation/) queries the files directly;
 cap its memory, as it takes 80% of RAM by default:
 
