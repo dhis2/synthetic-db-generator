@@ -81,9 +81,9 @@ adds what the metadata cannot say: how much, how it is spread, and what depends 
   of the machine. DHIS2 and Postgres refuse to start without it. On a smaller machine, lower the
   [caps](#caps).
 * Disk: about 1.5 GiB per million events for the build database, plus up to 4 GiB of WAL, and
-  0.25 GiB per million events for the dump. MNCH's district QP1613, 2.2 million events, takes
-  6.4 GiB and 0.5 GiB. DHIS2 and Postgres refuse to start with less than 10 GiB free, and `load`
-  with less than 8 GiB plus 1.5 GiB per million events.
+  0.25 GiB per million events for the dump. District QP1613 of [MNCH][mnch], 2.2 million events,
+  takes 6.4 GiB and 0.5 GiB. DHIS2 and Postgres refuse to start with less than 10 GiB free, and
+  `load` with less than 8 GiB plus 1.5 GiB per million events.
 
 ### Choose the area
 
@@ -137,8 +137,8 @@ their memory caps plus `DBGEN_HEADROOM` are free.
 | `DBGEN_WEB_HEAP` | `3g` | DHIS2's Java heap, less than its container's memory |
 | `DBGEN_HEADROOM` | `8g` | the memory left free for DuckDB and the rest of the machine |
 
-A build of up to about 100,000 events, such as MNCH's ward QP0602-02, fits a standard GitHub
-runner of 4 CPUs and 16 GB with:
+A build of up to about 100,000 events, such as ward QP0602-02 of [MNCH][mnch], fits a standard
+GitHub runner of 4 CPUs and 16 GB with:
 
 ```sh
 DBGEN_DB_MEMORY=3g DBGEN_WEB_MEMORY=4g DBGEN_WEB_HEAP=2500m DBGEN_HEADROOM=3g \
