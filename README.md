@@ -172,10 +172,11 @@ Usernames are in lower case, such as `pregnancy.ex0201-01.1` and `pregnancy.dist
 ## Write a spec
 
 Only `[build].metadata` is required. With nothing else, `dbgen` fills every compulsory field with
-a value its metadata allows, by the [defaults](#defaults), and leaves the others empty. Such values
-pass the importer's checks but not always the program rules (see [Program rules](#program-rules)).
+a value its metadata allows and leaves the others empty (see [What the metadata
+gives](#what-the-metadata-gives)). Such values pass the importer's checks but not always the
+program rules (see [Program rules](#program-rules)).
 
-### Defaults
+### What the metadata gives
 
 | Metadata | Default |
 |---|---|
@@ -200,7 +201,7 @@ pass the importer's checks but not always the program rules (see [Program rules]
 A default knows a field's type, not what it holds. If a query filters on a field, set its
 [distribution](docs/distributions.md) in the spec, as its values shape the plan.
 
-### Keys
+### What the spec adds
 
 The [MNCH spec][mnch] of synthetic-databases fills DHIS2's ANC and EIR packages and sets most
 keys. These are one or two lines of each key, the rest left out at `# ...`:
