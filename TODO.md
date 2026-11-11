@@ -2,26 +2,13 @@
 
 ## Release
 
-`dhis2/synthetic-databases` builds the databases with dbgen, upgrades them to each later DHIS2
-version and publishes their dumps. dbgen builds at one DHIS2 image, the base its `lock.toml` pins,
-and knows no other version: no upgrades, no databases, no S3, no schedule. A move of the base
-replaces the table layout in a dbgen release, as dbgen never writes two.
-
-* Tag v0.1.0, and pin it in the pipeline by its tag rather than by a commit.
+* Tag v0.1.0, once synthetic-databases' first release is stable on the commit it pins.
 
 ## Next
 
-In order:
-
-* Make MNCH's values agree with ANC's and EIR's program rules. dbgen draws each value by itself,
-  while a rule computes some values from others, such as the weight category from the weight.
-  verify sends a sample of QP1613 back through the importer, which runs the rules, and they
-  warn 6,630 times in ANC and 106 in EIR. Warnings, not errors: E1308, a rule would
-  replace the value, and E1300, a rule shows a warning. Capture runs the rules too, as an import
-  stream would: find the rules that matter, and draw their fields as they compute them.
-* The import stream, once dumps are published. TrackerTest imports Synthea's women and children,
-  whole histories without UIDs, as admin, in a loop: nothing continues the database, while in a
-  live instance most writes do.
+* The import stream. TrackerTest imports Synthea's women and children, whole histories without
+  UIDs, as admin, in a loop: nothing continues the database, while in a live instance most writes
+  do.
   * dbgen draws the future already and drops it: `generate.py` keeps an enrollment's events before
     `window_end`, the first after it as SCHEDULE, and drops enrollments that start after it. A
     horizon past `build.end` puts what falls in it into a stream instead: the next events of the
@@ -47,11 +34,6 @@ In order:
   release: an implementation answers in weeks, and a perf database is published without it. The
   `stats` stage, the collector and `dbgen report` did, on the branch `backup/planner-report` of
   `teleivo/dhis2-db-generator`.
-* Find out the search scope implementations give clerks, and how often they break the glass.
-  Asked around in 2026-11, nobody knew what is typical, and break the glass seems rarely used.
-  MNCH's `search_level = "District"` and EIR being PROTECTED decide what a clerk's search reads:
-  if clerks in practice search their capture scope only, the district-wide searches are heavier
-  than a live instance's.
 
 ## Ideas
 
