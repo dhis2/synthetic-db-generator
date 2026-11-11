@@ -42,7 +42,8 @@ uv run dbgen build examples/pregnancy/pregnancy.toml --orgunit EX0201
 Performance tests need tracker data of a realistic size and shape: few busy facilities and many
 quiet ones, names that repeat, records spread over years, values that depend on each other. The
 Postgres planner assumes evenly spread, independent columns, so data drawn column by column hides
-the misestimates and slow plans that real data can cause ([Leis et al.][leis]).
+the misestimates and slow plans that real data can cause (see [How Good Are Query Optimizers,
+Really?][leis]).
 
 [leis]: https://www.vldb.org/pvldb/vol9/p204-leis.pdf
 
