@@ -44,8 +44,14 @@ from dbgen.spec import slug
 from dbgen.uid import uid
 
 ROLES = {
-    "clerk": {"name": "Tracker data capture", "authorities": ["M_capture", "F_UNCOMPLETE_EVENT"]},
-    "officer": {"name": "Tracker view", "authorities": ["M_capture", "F_VIEW_EVENT_ANALYTICS"]},
+    "clerk": {
+        "name": "Tracker data capture",
+        "authorities": ["M_dhis-web-capture", "F_UNCOMPLETE_EVENT"],
+    },
+    "officer": {
+        "name": "Tracker view",
+        "authorities": ["M_dhis-web-capture", "F_VIEW_EVENT_ANALYTICS"],
+    },
     "admin": {"name": "Tracker superuser", "authorities": ["ALL"]},
 }
 
