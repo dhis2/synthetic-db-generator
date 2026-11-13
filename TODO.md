@@ -157,3 +157,15 @@ Rules, so that its output is no personal data:
   every version implementations run, or at least the supported ones.
 * Where it lives (dbgen, the pipeline, or core beside the perf tests), who runs it with the
   implementation, and under what agreement.
+
+### Perf test parameters from the records
+
+A perf test runs as one clerk with the same filters every iteration. synthetic-databases could
+publish generate's Parquet files once per release beside the dumps, as every version holds the
+same records (about 100 MB for district QP1613). A test would then pick its parameters by a query
+of the files on S3, without restoring a dump: the clerks of the busiest, a median and the quietest
+facility, a common and a rare family name, tracked entities with many events.
+
+* the files' layout becomes a public format: version it, as renaming a column breaks a reader
+* dev holds other records than a release, so it needs a prefix of its own
+* the same files allow a data diff of a spec change in CI, against main's
